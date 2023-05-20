@@ -60,6 +60,15 @@
     <ClInclude Include="Source\Graphics\Cube.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Raytracing\RaytracingContext.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Test\AccelerationStructures.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Raytracing\ShaderTable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\DeviceContext.cpp">
@@ -92,9 +101,21 @@
     <ClCompile Include="Source\Graphics\Cube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Raytracing\RaytracingContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Test\AccelerationStructures.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Raytracing\ShaderTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\Shaders\Global_Vertex.hlsl" />
     <FxCompile Include="Assets\Shaders\Global_Pixel.hlsl" />
+    <FxCompile Include="Assets\Raytracing\RayTracing.hlsl" />
+    <FxCompile Include="Assets\Shaders\Vertex_01.hlsl" />
+    <FxCompile Include="Assets\Shaders\Pixel_01.hlsl" />
   </ItemGroup>
 </Project>

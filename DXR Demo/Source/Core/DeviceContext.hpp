@@ -38,6 +38,12 @@ public:
 
 	bool CheckRaytracingSupport(IDXGIAdapter1* pAdapter);
 
+	void ExecuteCommandLists();
+
+	void FlushGPU();
+	void MoveToNextFrame();
+	void WaitForGPU();
+
 	void Destroy();
 
 	static const uint32_t FRAME_COUNT{ 2 };

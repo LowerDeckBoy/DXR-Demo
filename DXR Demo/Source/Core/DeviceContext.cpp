@@ -187,17 +187,17 @@ void DeviceContext::CreateFence()
 
 void DeviceContext::SetViewport()
 {
+    m_Viewport.TopLeftX     = 0.0f;
+    m_Viewport.TopLeftY     = 0.0f;
+    m_Viewport.Width        = static_cast<float>(Window::Resolution().Width);
+    m_Viewport.Height       = static_cast<float>(Window::Resolution().Height);
+    m_Viewport.MinDepth     = D3D12_MIN_DEPTH;
+    m_Viewport.MaxDepth     = D3D12_MAX_DEPTH;
+
     m_ViewportRect.left     = 0;
     m_ViewportRect.top      = 0;
     m_ViewportRect.right    = static_cast<LONG>(Window::Resolution().Width);
     m_ViewportRect.bottom   = static_cast<LONG>(Window::Resolution().Height);
-
-    m_Viewport.TopLeftX = 0.0f;
-    m_Viewport.TopLeftY = 0.0f;
-    m_Viewport.Width    = static_cast<float>(Window::Resolution().Width);
-    m_Viewport.Height   = static_cast<float>(Window::Resolution().Height);
-    m_Viewport.MinDepth = 0.0f;
-    m_Viewport.MaxDepth = 1.0f;
 }
 
 bool DeviceContext::CheckRaytracingSupport(IDXGIAdapter1* pAdapter)
@@ -215,6 +215,64 @@ bool DeviceContext::CheckRaytracingSupport(IDXGIAdapter1* pAdapter)
     }
 
     return false;
+}
+
+void DeviceContext::ExecuteCommandLists()
+{
+    ThrowIfFailed(m_CommandList.Get()->Close());
+
+    ID3D12CommandList* ppCommandLists[] = { m_CommandList.Get() };
+    m_CommandQueue.Get()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    WaitForGPU();
+}
+
+void DeviceContext::FlushGPU()
+{
+    for (uint32_t i = 0; i < FRAME_COUNT; i++)
+    {
+        const uint64_t currentValue{ FRAME_INDEX };
+
+        ThrowIfFailed(m_CommandQueue.Get()->Signal(m_Fence.Get(), currentValue));
+        m_FenceValues[i]++;
+
+        if (m_Fence.Get()->GetCompletedValue() < currentValue)
+        {
+            ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(currentValue, m_FenceEvent));
+
+            WaitForSingleObject(m_FenceEvent, INFINITE);
+        }
+    }
+
+    FRAME_INDEX = 0;
+}
+
+void DeviceContext::MoveToNextFrame()
+{
+    const UINT64 currentFenceValue = m_FenceValues[FRAME_INDEX];
+    ThrowIfFailed(GetCommandQueue()->Signal(GetFence(), currentFenceValue));
+
+    // Update the frame index.
+    FRAME_INDEX = m_SwapChain.Get()->GetCurrentBackBufferIndex();
+
+    // If the next frame is not ready to be rendered yet, wait until it is ready.
+    if (m_Fence.Get()->GetCompletedValue() < m_FenceValues[FRAME_INDEX])
+    {
+        ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(m_FenceValues[FRAME_INDEX], m_FenceEvent));
+        WaitForSingleObjectEx(m_FenceEvent, INFINITE, FALSE);
+    }
+
+    m_FenceValues[FRAME_INDEX] = currentFenceValue + 1;
+}
+
+void DeviceContext::WaitForGPU()
+{
+    ThrowIfFailed(m_CommandQueue.Get()->Signal(m_Fence.Get(), m_FenceValues[FRAME_INDEX]));
+
+    ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(m_FenceValues[FRAME_INDEX], m_FenceEvent));
+    ::WaitForSingleObjectEx(m_FenceEvent, INFINITE, FALSE);
+
+    m_FenceValues[FRAME_INDEX]++;
 }
 
 void DeviceContext::Destroy()

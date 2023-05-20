@@ -159,6 +159,15 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
 		return 0;
 	}
+	case WM_KEYDOWN:
+	{
+		
+		if (GetKeyState(VK_SPACE) & 0x800)
+		{
+			m_Renderer->bRaster = !m_Renderer->bRaster;
+		}
+		return 0;
+	}
 
 	case WM_CLOSE:
 	case WM_DESTROY:

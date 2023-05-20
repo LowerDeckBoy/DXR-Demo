@@ -61,7 +61,6 @@ public:
 		if (bIsInitialized)
 			return;
 
-		
 		size_t structSize{ (sizeof(T) + 255) & ~255 };
 
 		auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
@@ -111,6 +110,14 @@ public:
 	{
 		if (Index >= 0 && Index <= FRAME_COUNT)
 			return Buffer[Index].Get();
+
+		return nullptr;
+	}
+
+	inline T* GetData(uint32_t Index)
+	{
+		if (Index >= 0 && Index <= FRAME_COUNT)
+			return Data.at(Index);
 
 		return nullptr;
 	}

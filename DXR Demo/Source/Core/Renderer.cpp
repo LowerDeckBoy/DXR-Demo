@@ -20,15 +20,32 @@ void Renderer::Initalize()
 
 	LoadAssets();
 
-	ExecuteCommandLists();
-	WaitForGPU();
+	m_DeviceCtx->ExecuteCommandLists();
+	m_DeviceCtx->WaitForGPU();
+
+	//m_RaytracingCtx = std::make_unique<RaytracingContext>(m_DeviceCtx.get());
+	//m_DeviceCtx->WaitForGPU();
+	//m_DeviceCtx->FlushGPU();
 }
 
 void Renderer::LoadAssets()
 {
 	// Load models
 
-	m_Cube.Create(m_DeviceCtx.get());
+	//m_Cube.Create(m_DeviceCtx.get());
+	float aspectRatio{ m_DeviceCtx->GetViewport().Width / m_DeviceCtx->GetViewport().Height };
+	std::vector<SimpleVertex> triangleVertices = {
+			{{+0.0f,  +0.25f * aspectRatio, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
+			{{+0.25f, -0.25f * aspectRatio, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
+			{{-0.25f, -0.25f * aspectRatio, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} }
+	};
+	m_VertexBuffer.Buffer.Create(m_DeviceCtx.get(), {}, { triangleVertices.data(), static_cast<uint32_t>(triangleVertices.size()), sizeof(triangleVertices.at(0)) * triangleVertices.size() });
+	m_VertexBuffer.BufferView.Set(&m_VertexBuffer.Buffer);
+}
+
+void Renderer::OnRaytrace()
+{
+	m_RaytracingCtx->OnRaytrace();
 }
 
 void Renderer::Update(Camera* pCamera)
@@ -48,7 +65,7 @@ void Renderer::Render(Camera* pCamera)
 		throw std::exception();
 	}
 
-	MoveToNextFrame();
+	m_DeviceCtx->MoveToNextFrame();
 }
 
 void Renderer::Resize()
@@ -57,7 +74,7 @@ void Renderer::Resize()
 
 void Renderer::Destroy()
 {
-	WaitForGPU();
+	m_DeviceCtx->WaitForGPU();
 	::CloseHandle(m_DeviceCtx->m_FenceEvent);
 }
 
@@ -79,27 +96,35 @@ void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 	ID3D12DescriptorHeap* ppHeaps[] = { m_DeviceCtx->GetMainHeap()->GetHeap() };
 	m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-	SetRenderTarget();
+	//SetRenderTarget();
 	// Draw Triangle
 	//m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	//m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.GetBufferView());
 	//m_DeviceCtx->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DeviceCtx->GetRenderTargetHeap()->GetCPUDescriptorHandleForHeapStart(), m_DeviceCtx->FRAME_INDEX, m_DeviceCtx->GetRenderTargetHeapDescriptorSize());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
+	m_DeviceCtx->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthHandle);
 
-	m_Cube.Draw(pCamera->GetViewProjection());
+	if (bRaster)
+	{
+		m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_DeviceCtx->GetCommandList()->ClearRenderTargetView(rtvHandle, m_ClearColor.data(), 0, nullptr);
+		m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.BufferView.BufferView);
+		m_DeviceCtx->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+	}
+	else // Raytrace
+	{
+		std::array<float, 4> clearColor{ 0.7f, 1.0f, 1.0f, 1.0f };
+		m_DeviceCtx->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor.data(), 0, nullptr);
+	}
+
+	//m_Cube.Draw(pCamera->GetViewProjection());
+
+	//OnRaytrace();
 
 	TransitToPresent();
-
+	//TransitToPresent(D3D12_RESOURCE_STATE_PRESENT);
 	ThrowIfFailed(m_DeviceCtx->GetCommandList()->Close());
-}
-
-void Renderer::ExecuteCommandLists()
-{
-	ThrowIfFailed(m_DeviceCtx->GetCommandList()->Close());
-
-	ID3D12CommandList* ppCommandLists[] = { m_DeviceCtx->GetCommandList() };
-	m_DeviceCtx->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-	WaitForGPU();
 }
 
 void Renderer::SetRenderTarget()
@@ -123,58 +148,17 @@ void Renderer::TransitToRender()
 	m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &presentToRender);
 }
 
-void Renderer::TransitToPresent()
+void Renderer::TransitToPresent(D3D12_RESOURCE_STATES StateBefore)
 {
-	auto renderToPresent = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &renderToPresent);
-}
+	//auto renderToPresent = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	//m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &renderToPresent);
 
-void Renderer::FlushGPU()
-{
-	for (uint32_t i = 0; i < m_DeviceCtx->FRAME_COUNT; i++)
+	if (StateBefore != D3D12_RESOURCE_STATE_PRESENT)
 	{
-		const uint64_t currentValue{ m_DeviceCtx->FRAME_INDEX };
-
-		ThrowIfFailed(m_DeviceCtx->GetCommandQueue()->Signal(m_DeviceCtx->GetFence(), currentValue));
-		m_DeviceCtx->m_FenceValues[i]++;
-
-		if (m_DeviceCtx->GetFence()->GetCompletedValue() < currentValue)
-		{
-			ThrowIfFailed(m_DeviceCtx->GetFence()->SetEventOnCompletion(currentValue, m_DeviceCtx->m_FenceEvent));
-
-			WaitForSingleObject(m_DeviceCtx->m_FenceEvent, INFINITE);
-		}
+		// Transition the render target to the state that allows it to be presented to the display.
+		D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), StateBefore, D3D12_RESOURCE_STATE_PRESENT);
+		m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &barrier);
 	}
-
-	m_DeviceCtx->FRAME_INDEX = 0;
-}
-
-void Renderer::MoveToNextFrame()
-{
-	const UINT64 currentFenceValue = m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX];
-	ThrowIfFailed(m_DeviceCtx->GetCommandQueue()->Signal(m_DeviceCtx->GetFence(), currentFenceValue));
-
-	// Update the frame index.
-	m_DeviceCtx->FRAME_INDEX = m_DeviceCtx->GetSwapChain()->GetCurrentBackBufferIndex();
-
-	// If the next frame is not ready to be rendered yet, wait until it is ready.
-	if (m_DeviceCtx->GetFence()->GetCompletedValue() < m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX])
-	{
-		ThrowIfFailed(m_DeviceCtx->GetFence()->SetEventOnCompletion(m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX], m_DeviceCtx->m_FenceEvent));
-		WaitForSingleObjectEx(m_DeviceCtx->m_FenceEvent, INFINITE, FALSE);
-	}
-
-	m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX] = currentFenceValue + 1;
-}
-
-void Renderer::WaitForGPU()
-{
-	ThrowIfFailed(m_DeviceCtx->GetCommandQueue()->Signal(m_DeviceCtx->GetFence(), m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX]));
-
-	ThrowIfFailed(m_DeviceCtx->m_Fence->SetEventOnCompletion(m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX], m_DeviceCtx->m_FenceEvent));
-	::WaitForSingleObjectEx(m_DeviceCtx->m_FenceEvent, INFINITE, FALSE);
-
-	m_DeviceCtx->m_FenceValues[m_DeviceCtx->FRAME_INDEX]++;
 }
 
 void Renderer::CreateDepthStencil()
@@ -194,9 +178,8 @@ void Renderer::CreateDepthStencil()
 	auto heapDesc{ CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
 												static_cast<uint64_t>(m_DeviceCtx->GetViewport().Width),
 												static_cast<uint32_t>(m_DeviceCtx->GetViewport().Height),
-												1, 0, 1, 0,
-												D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) };
-
+												1, 1) };
+	heapDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	ThrowIfFailed(m_DeviceCtx->GetDevice()->CreateCommittedResource(&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&heapDesc,
@@ -206,10 +189,9 @@ void Renderer::CreateDepthStencil()
 	m_DepthHeap.Get()->SetName(L"Depth Heap");
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsView{};
-	dsView.Flags = D3D12_DSV_FLAG_NONE;
 	dsView.Format = DXGI_FORMAT_D32_FLOAT;
 	dsView.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsView.Texture2D.MipSlice = 0;
+	//dsView.Texture2D.MipSlice = 0;
 
 	m_DeviceCtx->GetDevice()->CreateDepthStencilView(m_DepthStencil.Get(), &dsView, m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
 	m_DepthStencil.Get()->SetName(L"Depth Stencil");
@@ -217,10 +199,10 @@ void Renderer::CreateDepthStencil()
 
 void Renderer::CreatePipelines()
 {
-	//m_VertexShader.Create("Assets/Shaders/Vertex_01.hlsl", "vs_5_1");
-	//m_PixelShader.Create("Assets/Shaders/Pixel_01.hlsl", "ps_5_1");
-	m_VertexShader.Create("Assets/Shaders/Global_Vertex.hlsl", "vs_5_1");
-	m_PixelShader.Create("Assets/Shaders/Global_Pixel.hlsl", "ps_5_1");
+	m_VertexShader.Create("Assets/Shaders/Vertex_01.hlsl", "vs_5_1");
+	m_PixelShader.Create("Assets/Shaders/Pixel_01.hlsl", "ps_5_1");
+	//m_VertexShader.Create("Assets/Shaders/Global_Vertex.hlsl", "vs_5_1");
+	//m_PixelShader.Create("Assets/Shaders/Global_Pixel.hlsl", "ps_5_1");
 
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges{};
 	// Vertex
@@ -251,7 +233,7 @@ void Renderer::CreatePipelines()
 			{ { 0.25f, -0.25f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
 			{ {-0.25f, -0.25f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} }
 	};
-	m_VertexBuffer.Create(m_DeviceCtx->GetDevice(), triangleVertices);
+	//m_VertexBuffer.Create(m_DeviceCtx.get(), triangleVertices);
 
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },

@@ -12,6 +12,8 @@
 
 #include "../Graphics/Cube.hpp"
 
+#include "../Raytracing/RaytracingContext.hpp"
+
 class Renderer
 {
 public:
@@ -21,32 +23,26 @@ public:
 	void Initalize();
 	void LoadAssets();
 
+	void OnRaytrace();
 	void Update(Camera* pCamera);
 	void Render(Camera* pCamera);
 	void Resize();
 	void Destroy();
 	
-
+	bool bRaster{ true };
 private:
 	std::unique_ptr<DeviceContext> m_DeviceCtx;
 
 	void RecordCommandList(uint32_t CurrentFrame, Camera* pCamera);
-	void ExecuteCommandLists();
 
 	void SetRenderTarget();
 	void ClearRenderTarget(CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle);
 
 	void TransitToRender();
-	void TransitToPresent();
-
-	void FlushGPU();
-	void MoveToNextFrame();
-	void WaitForGPU();
+	void TransitToPresent(D3D12_RESOURCE_STATES StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	void CreateDepthStencil();
 	void CreatePipelines();
-
-	bool bRaster{ true };
 
 	std::array<const float, 4> m_ClearColor{ 0.5f, 0.5f, 1.0f, 1.0f };
 
@@ -64,10 +60,17 @@ private:
 	Shader m_PixelShader;
 
 	// Triangle data
-	VertexBuffer<SimpleVertex> m_VertexBuffer;
+	//VertexBuffer<SimpleVertex> m_VertexBuffer;
+	VertexBuffer m_VertexBuffer;
 
 	// Test
 	Cube m_Cube;
+
+	// Raytracing
+	std::unique_ptr<RaytracingContext> m_RaytracingCtx;
+
+	
+	//bool bRaster{ false };
 
 };
 

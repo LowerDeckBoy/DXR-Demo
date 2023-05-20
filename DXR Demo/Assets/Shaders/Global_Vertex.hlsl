@@ -24,9 +24,9 @@ VS_OUTPUT main(VS_INPUT vin)
 {
     VS_OUTPUT output = (VS_OUTPUT) 0;
     
-    output.Position = mul(WVP, float4(vin.Position, 1.0f));
+    output.Position      = mul(WVP, float4(vin.Position, 1.0f));
     output.WorldPosition = mul(World, float4(vin.Position, 1.0f));
-    output.Color = vin.Color;
+    output.Color         = vin.Color;
     
     return output;
 }
