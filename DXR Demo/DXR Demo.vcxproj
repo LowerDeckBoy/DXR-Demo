@@ -114,7 +114,8 @@
       <AdditionalDependencies>d3d12.lib;dxgi.lib;d3dcompiler.lib;dxcompiler.lib;dinput8.lib;pdh.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>robocopy "$(WindowsSdkDir)Redist\D3D\x64\ " "$(TargetDir)\" dxil.dll dxcompiler.dll</Command>
+      <Command>(robocopy "$(SolutionDir)Libs\\" "$(TargetDir)\" dxil.dll dxcompiler.dll /z) ^&amp; IF %ERRORLEVEL% LEQ 1 exit 0</Command>
+      <Message>Copying d3dcompiler and dxil DLLs for HLSL Shader Model 6.x usage</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,12 +135,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Raytracing\ShaderTable.hpp" />
-    <ClInclude Include="Source\Test\AccelerationStructures.hpp" />
+    <ClInclude Include="3rd-party\d3dx12.h" />
+    <ClInclude Include="Source\Raytracing\AccelerationStructures.hpp" />
     <ClInclude Include="Source\Raytracing\RaytracingContext.hpp" />
+    <ClInclude Include="Source\Raytracing\ShaderTable.hpp" />
     <ClInclude Include="Source\Core\DescriptorHeap.hpp" />
     <ClInclude Include="Source\Core\DeviceContext.hpp" />
-    <ClInclude Include="Source\Core\DXSample.hpp" />
     <ClInclude Include="Source\Core\PipelineStateObject.hpp" />
     <ClInclude Include="Source\Core\Renderer.hpp" />
     <ClInclude Include="Source\Core\Window.hpp" />
@@ -154,11 +155,10 @@
     <ClInclude Include="Source\Utilities\Utilities.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Raytracing\ShaderTable.cpp" />
-    <ClCompile Include="Source\Test\AccelerationStructures.cpp" />
+    <ClCompile Include="Source\Raytracing\AccelerationStructures.cpp" />
     <ClCompile Include="Source\Raytracing\RaytracingContext.cpp" />
+    <ClCompile Include="Source\Raytracing\ShaderTable.cpp" />
     <ClCompile Include="Source\Core\DeviceContext.cpp" />
-    <ClCompile Include="Source\Core\DXSample.cpp" />
     <ClCompile Include="Source\Core\PipelineStateObject.cpp" />
     <ClCompile Include="Source\Core\Renderer.cpp" />
     <ClCompile Include="Source\Core\Window.cpp" />
@@ -169,11 +169,45 @@
     <ClCompile Include="Source\Rendering\Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Assets\Raytracing\RayTracing.hlsl">
+    <FxCompile Include="Assets\Raytracing\Common.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.3</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </EntryPointName>
+    </FxCompile>
+    <FxCompile Include="Assets\Raytracing\Hit.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.3</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Assets\Raytracing\Miss.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.3</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Assets\Raytracing\RayGen.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </EntryPointName>
@@ -207,6 +241,5 @@
     </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>
