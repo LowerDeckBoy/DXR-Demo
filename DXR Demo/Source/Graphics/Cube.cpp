@@ -32,12 +32,16 @@ void Cube::Create(DeviceContext* pDevice)
 
 	// Create Buffers
 	{
-		m_VertexBuffer.Create(m_Device, BufferData(m_Vertices.data(), static_cast<uint32_t>(m_Vertices.size()), sizeof(m_Vertices.at(0)) * m_Vertices.size()), BufferDesc());
+		m_VertexBuffer.Buffer.Create(m_Device, {}, { m_Vertices.data(), static_cast<uint32_t>(m_Vertices.size()), sizeof(m_Vertices.at(0)) * m_Vertices.size() });
+		m_VertexBuffer.BufferView.Set(&m_VertexBuffer.Buffer);
 	}
 	{
-		m_IndexBuffer.Create(m_Device, BufferData(m_Indices.data(), static_cast<uint32_t>(m_Indices.size()), m_Indices.size() * sizeof(uint32_t)), BufferDesc());
+		m_IndexBuffer.Buffer.Create(m_Device, {}, { m_Indices.data(), static_cast<uint32_t>(m_Indices.size()), m_Indices.size() * sizeof(uint32_t)});
+		m_IndexBuffer.BufferView.Set(&m_IndexBuffer.Buffer);
 	}
 
+	//m_VertexBuffer.Create(pDevice, m_Vertices);
+	//m_IndexBuffer.Create(pDevice->GetDevice(), m_Indices);
 	m_ConstBuffer.Create(pDevice, &m_cbData);
 }
 
@@ -52,14 +56,14 @@ void Cube::Draw()
 void Cube::Draw(DirectX::XMMATRIX ViewProjection)
 {
 	m_Device->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_Device->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.View);
-	m_Device->GetCommandList()->IASetIndexBuffer(&m_IndexBuffer.View);
+	m_Device->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.BufferView.BufferView);
+	m_Device->GetCommandList()->IASetIndexBuffer(&m_IndexBuffer.BufferView.BufferView);
 
 	auto frameIndex{ m_Device->FRAME_INDEX };
 	m_ConstBuffer.Update({ XMMatrixTranspose(DirectX::XMMatrixIdentity() * ViewProjection), DirectX::XMMatrixIdentity() }, frameIndex);
 	m_Device->GetCommandList()->SetGraphicsRootConstantBufferView(0, m_ConstBuffer.GetBuffer(frameIndex)->GetGPUVirtualAddress());
 
-	m_Device->GetCommandList()->DrawIndexedInstanced(m_IndexBuffer.Count, 1, 0, 0, 0);
+	m_Device->GetCommandList()->DrawIndexedInstanced(m_IndexBuffer.BufferView.Count, 1, 0, 0, 0);
 }
 
 void Cube::Release()

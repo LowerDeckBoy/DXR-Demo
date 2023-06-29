@@ -3,17 +3,12 @@
 #include "../../Utilities/Utilities.hpp"
 #include "../../Core/DeviceContext.hpp"
 
-// TODO: Needs rework
 
 struct BufferData
 {
-	BufferData() {}
-	BufferData(void* pData, size_t Count, size_t Size) :
-		pData(pData), ElementsCount(static_cast<uint32_t>(Count)), Size(Size) { }
-
-	void*	 pData{ nullptr };
-	uint32_t ElementsCount{ 0 };
-	size_t	 Size{ 0 };
+	void*	 pData			{ nullptr };
+	uint32_t ElementsCount	{ 0 };
+	size_t	 Size			{ 0 };
 };
 
 // Default properties
@@ -23,16 +18,17 @@ struct BufferData
 // Format:		Unknown
 struct BufferDesc
 {
-	CD3DX12_HEAP_PROPERTIES HeapProperties{ D3D12_HEAP_TYPE_UPLOAD };
-	D3D12_HEAP_FLAGS		HeapFlags{ D3D12_HEAP_FLAG_NONE };
-	D3D12_RESOURCE_STATES	State{ D3D12_RESOURCE_STATE_COMMON };
-	DXGI_FORMAT				Format{ DXGI_FORMAT_UNKNOWN };
+	CD3DX12_HEAP_PROPERTIES HeapProperties	{ D3D12_HEAP_TYPE_UPLOAD };
+	D3D12_HEAP_FLAGS		HeapFlags		{ D3D12_HEAP_FLAG_NONE };
+	D3D12_RESOURCE_STATES	State			{ D3D12_RESOURCE_STATE_COMMON };
+	DXGI_FORMAT				Format			{ DXGI_FORMAT_UNKNOWN };
 };
 
+// TODO: Make general Buffer class as a Base for different buffer types
 class Buffer
 {
 public:
-	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+	void Create(DeviceContext* pDevice, BufferDesc Desc, BufferData Data)
 	{
 		m_DeviceCtx = pDevice;
 		m_BufferDesc = Desc;
@@ -41,11 +37,11 @@ public:
 		auto heapDesc{ CD3DX12_RESOURCE_DESC::Buffer(Data.Size) };
 		//auto 
 		ThrowIfFailed(pDevice->GetDevice()->CreateCommittedResource(
-			&Desc.HeapProperties,
-			Desc.HeapFlags,
-			&heapDesc,
-			Desc.State,
-			nullptr,
+			&Desc.HeapProperties, 
+			Desc.HeapFlags, 
+			&heapDesc, 
+			Desc.State, 
+			nullptr, 
 			IID_PPV_ARGS(m_Buffer.GetAddressOf())));
 
 		MapMemory();
@@ -88,60 +84,43 @@ protected:
 	BufferData m_BufferData{};
 };
 
-class VertexBuffer
+struct VertexView
 {
-public:
-	VertexBuffer() {}
-	VertexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+	void Set(Buffer* pBuffer)
 	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
+		BufferView.BufferLocation = pBuffer->GetGPUAddress();
+		BufferView.SizeInBytes = pBuffer->GetData().Size;
+		BufferView.StrideInBytes = static_cast<uint32_t>(pBuffer->GetData().Size) / pBuffer->GetData().ElementsCount;
 	}
 
-	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
-	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
-	}
-
-	Buffer Buffer;
-	D3D12_VERTEX_BUFFER_VIEW View{};
-
-	void SetView()
-	{
-		View.BufferLocation = this->Buffer.GetGPUAddress();
-		View.SizeInBytes = static_cast<uint32_t>(this->Buffer.GetData().Size);
-		View.StrideInBytes = static_cast<uint32_t>(this->Buffer.GetData().Size) / this->Buffer.GetData().ElementsCount;
-	}
+	D3D12_VERTEX_BUFFER_VIEW BufferView{};
 };
 
-class IndexBuffer
+struct IndexView
 {
-public:
-	IndexBuffer() {}
-	IndexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+	void Set(Buffer* pBuffer)
 	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
+		BufferView.BufferLocation = pBuffer->GetGPUAddress();
+		BufferView.Format = DXGI_FORMAT_R32_UINT;
+		BufferView.SizeInBytes = pBuffer->GetData().Size;
+
+		Count = pBuffer->GetData().ElementsCount;
 	}
 
-	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
-	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
-	}
-
-	Buffer Buffer;
-	D3D12_INDEX_BUFFER_VIEW View{};
+	D3D12_INDEX_BUFFER_VIEW BufferView{};
 	uint32_t Count{ 0 };
+};
 
-	void SetView()
-	{
-		View.BufferLocation = this->Buffer.GetGPUAddress();
-		View.Format = DXGI_FORMAT_R32_UINT;
-		View.SizeInBytes = static_cast<uint32_t>(this->Buffer.GetData().Size);
-		Count = this->Buffer.GetData().ElementsCount;
-	}
+struct VertexBuffer
+{
+	Buffer		Buffer;
+	VertexView	BufferView;
+};
+
+struct IndexBuffer
+{
+	Buffer		Buffer;
+	IndexView	BufferView;
 };
 
 // TEST
@@ -181,45 +160,6 @@ public:
 		return buffer;
 	}
 
-	static void Create(ID3D12Device5* pDevice, ID3D12Resource* pTarget, const uint64_t Size, const D3D12_RESOURCE_FLAGS Flags, const D3D12_RESOURCE_STATES InitState, const D3D12_HEAP_PROPERTIES& HeapProps, D3D12_HEAP_FLAGS HeapFlags = D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_NONE)
-	{
-
-		D3D12_RESOURCE_DESC desc{ };
-		desc.Flags = Flags;
-		desc.Format = DXGI_FORMAT_UNKNOWN;
-		desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		desc.MipLevels = 1;
-		desc.DepthOrArraySize = 1;
-		desc.Height = 1;
-		desc.Width = Size;
-		desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		desc.SampleDesc = { 1, 0 };
-
-		ID3D12Resource* result{ nullptr };
-		ThrowIfFailed(pDevice->CreateCommittedResource(&HeapProps, HeapFlags, &desc, InitState, nullptr, IID_PPV_ARGS(&result)));
-		if (result)
-			pTarget = result;
-
-	}
-
-	static void Create(ID3D12Device5* pDevice, ID3D12Resource** ppTarget, const uint64_t Size, const D3D12_RESOURCE_FLAGS Flags, const D3D12_RESOURCE_STATES InitState, const D3D12_HEAP_PROPERTIES& HeapProps, D3D12_HEAP_FLAGS HeapFlags = D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_NONE)
-	{
-		D3D12_RESOURCE_DESC desc{};
-		desc.Flags = Flags;
-		desc.Format = DXGI_FORMAT_UNKNOWN;
-		desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		desc.MipLevels = 1;
-		desc.DepthOrArraySize = 1;
-		desc.Height = 1;
-		desc.Width = Size;
-		desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		desc.SampleDesc = { 1, 0 };
-
-		ID3D12Resource* result{ nullptr };
-		ThrowIfFailed(pDevice->CreateCommittedResource(&HeapProps, HeapFlags, &desc, InitState, nullptr, IID_PPV_ARGS(&(*(ppTarget)))));
-	}
-
-
 	static void CreateUAV(DeviceContext* pDevice, ID3D12Resource** ppTargetResource, size_t BufferSize, D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_COMMON)
 	{
 		auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -233,6 +173,30 @@ public:
 			IID_PPV_ARGS(ppTargetResource)));
 	}
 
+	// For Shaders
+	/*
+	static void CreateBufferSRV(DeviceContext* pDevice, Descriptor& DescriptorRef, ID3D12Resource* pBuffer, uint32_t BufferElements, uint32_t BufferElementSize)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Buffer.NumElements = BufferElements;
+		if (BufferElementSize == 0)
+		{
+			srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+			srvDesc.Buffer.StructureByteStride = 0;
+		}
+		else
+		{
+			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+			srvDesc.Buffer.StructureByteStride = BufferElementSize;
+		}
+		
+		pDevice->GetMainHeap()->Allocate(DescriptorRef);
+		pDevice->GetDevice()->CreateShaderResourceView(pBuffer, &srvDesc, DescriptorRef.GetCPU());
+	}*/
 	static void CreateBufferSRV(DeviceContext* pDevice, Descriptor& DescriptorRef, ID3D12Resource* pBuffer, uint32_t BufferElements, uint32_t BufferElementSize)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -262,6 +226,33 @@ public:
 		}
 	}
 
+	// !TEST
+	/*
+	static void CreateSRV(DeviceContext* pDevice, Buffer* pBuffer, BufferSRV& TargetBuffer)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Buffer.NumElements = pBuffer->GetData().ElementsCount;
+
+		if (pBuffer->GetData().ElementsCount == 0)
+		{
+			srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+			srvDesc.Buffer.StructureByteStride = 0;
+		}
+		else
+		{
+			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+			srvDesc.Buffer.StructureByteStride = pBuffer->GetData().ElementsCount;
+		}
+
+		pDevice->GetMainHeap()->Allocate(TargetBuffer.DescriptorSRV);
+		pDevice->GetDevice()->CreateShaderResourceView(TargetBuffer.Resource.Get(), &srvDesc, TargetBuffer.DescriptorSRV.GetCPU());
+	}
+	*/
+	
 	static void CreateSRV(DeviceContext* pDevice, Buffer* pBuffer)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -279,14 +270,12 @@ public:
 		{
 			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
 			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-			//srvDesc.Buffer.StructureByteStride = pBuffer->GetData().ElementsCount;
-			srvDesc.Buffer.StructureByteStride = static_cast<uint32_t>(pBuffer->GetData().Size / pBuffer->GetData().ElementsCount);
+			srvDesc.Buffer.StructureByteStride = pBuffer->GetData().ElementsCount;
 		}
 
 		pDevice->GetMainHeap()->Allocate(pBuffer->DescriptorSRV);
 		pDevice->GetDevice()->CreateShaderResourceView(pBuffer->GetBuffer(), &srvDesc, pBuffer->DescriptorSRV.GetCPU());
 	}
-
 	static void UploadBuffer(DeviceContext* pDevice, ID3D12Resource** ppTargetResource, void* pData, size_t DataSize)
 	{
 		auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);

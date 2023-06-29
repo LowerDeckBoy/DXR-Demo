@@ -15,39 +15,37 @@ void Renderer::Initalize()
 {
 	m_DeviceCtx = std::make_unique<DeviceContext>();
 	CreateDepthStencil();
+
 	CreatePipelines();
 
 	LoadAssets();
 
-	// Pass current object geometry data
-	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_VertexBuffer, m_IndexBuffer);
-
 	m_DeviceCtx->ExecuteCommandLists();
 	m_DeviceCtx->WaitForGPU();
 
+	//m_RaytracingCtx = std::make_unique<RaytracingContext>(m_DeviceCtx.get());
+	//m_DeviceCtx->WaitForGPU();
+	//m_DeviceCtx->FlushGPU();
 }
 
 void Renderer::LoadAssets()
 {
+	// Load models
+
+	//m_Cube.Create(m_DeviceCtx.get());
 	float aspectRatio{ m_DeviceCtx->GetViewport().Width / m_DeviceCtx->GetViewport().Height };
 	std::vector<SimpleVertex> triangleVertices = {
-			{ { +0.0f,  +0.25f * aspectRatio, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
-			{ { +0.25f, -0.25f * aspectRatio, 0.0f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
-			{ { -0.25f, -0.25f * aspectRatio, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } }
+			{{+0.0f,  +0.25f * aspectRatio, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
+			{{+0.25f, -0.25f * aspectRatio, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
+			{{-0.25f, -0.25f * aspectRatio, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} }
 	};
-
-	std::vector<uint32_t> indices {
-		0, 1, 2
-	};
-
-	m_VertexBuffer.Create(m_DeviceCtx.get(), BufferData(triangleVertices.data(), triangleVertices.size(), sizeof(triangleVertices.at(0)) * triangleVertices.size()), BufferDesc());
-
-	m_IndexBuffer.Create(m_DeviceCtx.get(), BufferData(indices.data(), indices.size(), sizeof(uint32_t) * indices.size()), BufferDesc());
+	m_VertexBuffer.Buffer.Create(m_DeviceCtx.get(), {}, { triangleVertices.data(), static_cast<uint32_t>(triangleVertices.size()), sizeof(triangleVertices.at(0)) * triangleVertices.size() });
+	m_VertexBuffer.BufferView.Set(&m_VertexBuffer.Buffer);
 }
 
 void Renderer::OnRaytrace()
 {
-	m_RaytracingContext->OnRaytrace();
+	m_RaytracingCtx->OnRaytrace();
 }
 
 void Renderer::Update(Camera* pCamera)
@@ -64,7 +62,7 @@ void Renderer::Render(Camera* pCamera)
 	HRESULT hResult{ m_DeviceCtx->GetSwapChain()->Present(1, 0) };
 	if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET)
 	{
-		throw std::logic_error("Device Removed!");
+		throw std::exception();
 	}
 
 	m_DeviceCtx->MoveToNextFrame();
@@ -72,63 +70,60 @@ void Renderer::Render(Camera* pCamera)
 
 void Renderer::Resize()
 {
-	// TODO:
 }
 
 void Renderer::Destroy()
 {
 	m_DeviceCtx->WaitForGPU();
-
-	SAFE_RELEASE(m_DepthStencil);
-	SAFE_RELEASE(m_DepthHeap);
-	SAFE_RELEASE(m_PipelineState);
-	SAFE_RELEASE(m_RootSignature);
-
 	::CloseHandle(m_DeviceCtx->m_FenceEvent);
 }
 
 void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 {
-	BeginFrame();
-	SetRenderTarget();
-
-	// Spacebar to switch modes
-	if (bRaster)
-	{
-		ID3D12DescriptorHeap* ppHeaps[] = { m_DeviceCtx->GetMainHeap()->GetHeap() };
-		m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-
-		ClearRenderTarget();
-		m_DeviceCtx->GetCommandList()->SetPipelineState(m_PipelineState.Get());
-		m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
-		m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.View);
-		m_DeviceCtx->GetCommandList()->DrawInstanced(m_IndexBuffer.Count, 1, 0, 0);
-	}
-	else // Raytrace
-	{
-		OnRaytrace();
-	}
-
-	EndFrame();
-}
-
-void Renderer::BeginFrame()
-{
+	//auto frameIndex{ m_FrameIndex };
 	ThrowIfFailed(m_DeviceCtx->GetCommandAllocator(m_DeviceCtx->FRAME_INDEX)->Reset());
 	ThrowIfFailed(m_DeviceCtx->GetCommandList()->Reset(m_DeviceCtx->GetCommandAllocator(m_DeviceCtx->FRAME_INDEX), nullptr));
 
+	m_DeviceCtx->GetCommandList()->SetPipelineState(m_PipelineState.Get());
+	m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 	auto viewport{ m_DeviceCtx->GetViewport() };
 	auto rect{ m_DeviceCtx->GetViewportRect() };
 	m_DeviceCtx->GetCommandList()->RSSetViewports(1, &viewport);
 	m_DeviceCtx->GetCommandList()->RSSetScissorRects(1, &rect);
 
 	TransitToRender();
-}
 
-void Renderer::EndFrame()
-{
-	TransitToPresent(D3D12_RESOURCE_STATE_RENDER_TARGET);
+	ID3D12DescriptorHeap* ppHeaps[] = { m_DeviceCtx->GetMainHeap()->GetHeap() };
+	m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+
+	//SetRenderTarget();
+	// Draw Triangle
+	//m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.GetBufferView());
+	//m_DeviceCtx->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DeviceCtx->GetRenderTargetHeap()->GetCPUDescriptorHandleForHeapStart(), m_DeviceCtx->FRAME_INDEX, m_DeviceCtx->GetRenderTargetHeapDescriptorSize());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
+	m_DeviceCtx->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthHandle);
+
+	if (bRaster)
+	{
+		m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_DeviceCtx->GetCommandList()->ClearRenderTargetView(rtvHandle, m_ClearColor.data(), 0, nullptr);
+		m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.BufferView.BufferView);
+		m_DeviceCtx->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+	}
+	else // Raytrace
+	{
+		std::array<float, 4> clearColor{ 0.7f, 1.0f, 1.0f, 1.0f };
+		m_DeviceCtx->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor.data(), 0, nullptr);
+	}
+
+	//m_Cube.Draw(pCamera->GetViewProjection());
+
+	//OnRaytrace();
+
+	TransitToPresent();
+	//TransitToPresent(D3D12_RESOURCE_STATE_PRESENT);
 	ThrowIfFailed(m_DeviceCtx->GetCommandList()->Close());
 }
 
@@ -137,12 +132,12 @@ void Renderer::SetRenderTarget()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DeviceCtx->GetRenderTargetHeap()->GetCPUDescriptorHandleForHeapStart(), m_DeviceCtx->FRAME_INDEX, m_DeviceCtx->GetRenderTargetHeapDescriptorSize());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
 	m_DeviceCtx->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthHandle);
+
+	ClearRenderTarget(rtvHandle, depthHandle);
 }
 
-void Renderer::ClearRenderTarget()
+void Renderer::ClearRenderTarget(CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle)
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DeviceCtx->GetRenderTargetHeap()->GetCPUDescriptorHandleForHeapStart(), m_DeviceCtx->FRAME_INDEX, m_DeviceCtx->GetRenderTargetHeapDescriptorSize());
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
 	m_DeviceCtx->GetCommandList()->ClearRenderTargetView(rtvHandle, m_ClearColor.data(), 0, nullptr);
 	m_DeviceCtx->GetCommandList()->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
@@ -155,18 +150,14 @@ void Renderer::TransitToRender()
 
 void Renderer::TransitToPresent(D3D12_RESOURCE_STATES StateBefore)
 {
-	if (bRaster)
+	//auto renderToPresent = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	//m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &renderToPresent);
+
+	if (StateBefore != D3D12_RESOURCE_STATE_PRESENT)
 	{
-		D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+		// Transition the render target to the state that allows it to be presented to the display.
+		D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), StateBefore, D3D12_RESOURCE_STATE_PRESENT);
 		m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &barrier);
-	} 
-	else
-	{
-		if (StateBefore != D3D12_RESOURCE_STATE_PRESENT)
-		{
-			D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_DeviceCtx->GetRenderTarget(m_DeviceCtx->FRAME_INDEX), StateBefore, D3D12_RESOURCE_STATE_PRESENT);
-			m_DeviceCtx->GetCommandList()->ResourceBarrier(1, &barrier);
-		}
 	}
 }
 
@@ -200,7 +191,7 @@ void Renderer::CreateDepthStencil()
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsView{};
 	dsView.Format = DXGI_FORMAT_D32_FLOAT;
 	dsView.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsView.Texture2D.MipSlice = 0;
+	//dsView.Texture2D.MipSlice = 0;
 
 	m_DeviceCtx->GetDevice()->CreateDepthStencilView(m_DepthStencil.Get(), &dsView, m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
 	m_DepthStencil.Get()->SetName(L"Depth Stencil");
@@ -221,7 +212,11 @@ void Renderer::CreatePipelines()
 	// Vertex 
 	parameters.at(0).InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
+
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
+	//rootSignatureDesc.Init(
+	//	0, nullptr, 0, nullptr,
+	//	D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	rootSignatureDesc.Init(static_cast<uint32_t>(parameters.size()), parameters.data(), 0, nullptr,
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -233,12 +228,20 @@ void Renderer::CreatePipelines()
 		0, signature->GetBufferPointer(), signature->GetBufferSize(),
 		IID_PPV_ARGS(&m_RootSignature)));
 
-	std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs{};
-	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	inputElementDescs.at(1) = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	std::vector<SimpleVertex> triangleVertices = {
+			{ { 0.0f,   0.25f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f} },
+			{ { 0.25f, -0.25f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f} },
+			{ {-0.25f, -0.25f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f} }
+	};
+	//m_VertexBuffer.Create(m_DeviceCtx.get(), triangleVertices);
+
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-	psoDesc.InputLayout = { inputElementDescs.data(), static_cast<uint32_t>(inputElementDescs.size())};
+	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
 	psoDesc.pRootSignature = m_RootSignature.Get();
 	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_VertexShader.GetData());
 	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_PixelShader.GetData());
@@ -251,5 +254,6 @@ void Renderer::CreatePipelines()
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	psoDesc.SampleDesc.Count = 1;
 	ThrowIfFailed(m_DeviceCtx->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(m_PipelineState.GetAddressOf())));
+
 
 }

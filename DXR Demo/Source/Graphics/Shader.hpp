@@ -35,6 +35,8 @@ public:
 		std::wstring path{ std::wstring(Filepath.begin(), Filepath.end()) };
 		HRESULT hResult{ D3DCompileFromFile(path.c_str(), nullptr, pInclude, Entrypoint.data(), Target.data(), compileFlags, 0, Blob.GetAddressOf(), &Error) };
 
+
+
 		if (Error != nullptr)
 		{
 			::OutputDebugStringA(static_cast<char*>(Error->GetBufferPointer()));

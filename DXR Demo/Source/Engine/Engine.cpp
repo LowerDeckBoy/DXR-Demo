@@ -14,6 +14,7 @@ void Engine::Initialize()
 {
 	m_Timer = std::make_unique<Timer>();
 	Window::Initialize();
+	// Create Timer
 
 	m_Renderer = std::make_unique<Renderer>();
 	m_Camera = std::make_unique<Camera>();
@@ -79,6 +80,7 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		{
 			bAppPaused = false;
 			m_Timer->Start();
+			//OutputDebugStringA("Timer started\n");
 		}
 		return 0;
 	}
@@ -86,8 +88,14 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	{
 		m_Resolution.Set(static_cast<uint32_t>(LOWORD(lParam)), static_cast<uint32_t>(HIWORD(lParam)));
 
+		//if (!m_Renderer)
+		//
+		//	//OutputDebugStringA("Failed to get Renderer on resize event!\n");
+		//	return 0;
+		//}
 		if (wParam == SIZE_MINIMIZED)
 		{
+			//OutputDebugStringA("SIZE_MINIMIZED\n");
 			bAppPaused = true;
 			bMinimized = true;
 			bMaximized = false;
@@ -95,6 +103,7 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == SIZE_MAXIMIZED)
 		{
+			//OutputDebugStringA("SIZE_MAXIMIZED\n");
 			bAppPaused = false;
 			bMinimized = false;
 			bMaximized = true;
@@ -102,6 +111,7 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == SIZE_RESTORED)
 		{
+			//OutputDebugStringA("SIZE_RESTORED\n");
 			if (bMinimized)
 			{
 				bAppPaused = false;
@@ -128,18 +138,22 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_ENTERSIZEMOVE:
 	{
+		//OutputDebugStringA("WM_ENTERSIZEMOVE\n");
 		bAppPaused = true;
 		bIsResizing = true;
 		m_Timer->Stop();
+		//OutputDebugStringA("Timer stopped\n");
 
 		return 0;
 	}
 
 	case WM_EXITSIZEMOVE:
 	{
+		//OutputDebugStringA("WM_EXITSIZEMOVE\n");
 		bAppPaused = false;
 		bIsResizing = false;
 		m_Timer->Start();
+		//OutputDebugStringA("Timer started\n");
 
 		OnResize();
 
@@ -151,11 +165,6 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (GetKeyState(VK_SPACE) & 0x800)
 		{
 			m_Renderer->bRaster = !m_Renderer->bRaster;
-		}
-
-		if (GetKeyState(VK_ESCAPE) & 0x800)
-		{
-			::PostQuitMessage(0);
 		}
 		return 0;
 	}

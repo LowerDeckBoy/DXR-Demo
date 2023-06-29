@@ -51,7 +51,7 @@ private:
 	DirectX::XMVECTOR m_Right					{ DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f) };
 	DirectX::XMVECTOR m_Upward					{ DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f) };
 
-	DirectX::XMVECTOR const m_DefaultPosition	{ DirectX::XMVectorSet(0.0f, 2.5f, -8.0f, 0.0f) };
+	DirectX::XMVECTOR const m_DefaultPosition	{ DirectX::XMVectorSet(0.0f, 5.0f, -10.0f, 0.0f) };
 	DirectX::XMVECTOR const m_DefaultTarget		{ DirectX::XMVectorSet(0.0f, 5.0f, 0.0f, 0.0f) };
 	DirectX::XMVECTOR const m_DefaultUp			{ DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f) };
 

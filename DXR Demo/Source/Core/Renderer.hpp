@@ -10,8 +10,9 @@
 
 #include "../Rendering/Camera.hpp"
 
-#include "../Raytracing/RaytracingContext.hpp"
+#include "../Graphics/Cube.hpp"
 
+#include "../Raytracing/RaytracingContext.hpp"
 
 class Renderer
 {
@@ -34,20 +35,16 @@ private:
 
 	void RecordCommandList(uint32_t CurrentFrame, Camera* pCamera);
 
-	void BeginFrame();
-	void EndFrame();
-
 	void SetRenderTarget();
-	void ClearRenderTarget();
+	void ClearRenderTarget(CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle);
 
 	void TransitToRender();
 	void TransitToPresent(D3D12_RESOURCE_STATES StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	void CreateDepthStencil();
 	void CreatePipelines();
-	
+
 	std::array<const float, 4> m_ClearColor{ 0.5f, 0.5f, 1.0f, 1.0f };
-	//std::array<const float, 4> m_ClearColor{ 0.5f, 0.2f, 0.7f, 1.0f };
 
 	// DepthStencil
 	inline ID3D12DescriptorHeap* GetDepthHeap() const { return m_DepthHeap.Get(); };
@@ -63,10 +60,17 @@ private:
 	Shader m_PixelShader;
 
 	// Triangle data
+	//VertexBuffer<SimpleVertex> m_VertexBuffer;
 	VertexBuffer m_VertexBuffer;
-	IndexBuffer m_IndexBuffer;
+
+	// Test
+	Cube m_Cube;
 
 	// Raytracing
-	std::unique_ptr<RaytracingContext> m_RaytracingContext;
+	std::unique_ptr<RaytracingContext> m_RaytracingCtx;
+
+	
+	//bool bRaster{ false };
 
 };
+
