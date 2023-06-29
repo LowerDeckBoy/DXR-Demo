@@ -30,12 +30,12 @@ public:
 	void Draw(DirectX::XMMATRIX ViewProjection);
 	void Release();
 
-private:
+//private:
 	DeviceContext* m_Device{ nullptr };
 	//VertexBuffer<CubeVertex> m_VertexBuffer;
 	//IndexBuffer m_IndexBuffer;
-	VertexBuffer m_VertexBuffer{};
-	IndexBuffer m_IndexBuffer{};
+	VertexBuffer m_VertexBuffer;
+	IndexBuffer m_IndexBuffer;
 	
 
 	cbPerObject m_cbData{};
