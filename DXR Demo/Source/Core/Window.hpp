@@ -29,7 +29,7 @@ private:
 	inline static HWND m_hWnd{ nullptr };
 
 	LPCWSTR m_WindowClass{ L"Main" };
-	LPCWSTR m_WindowName{ L"DX12 Template" };
+	LPCWSTR m_WindowName{ L"DXR Demo" };
 
 	RECT m_Rect{};
 
@@ -63,7 +63,6 @@ public:
 	[[nodiscard]] inline static HWND GetHWND() { return m_hWnd; }
 
 	static DisplayResolution Resolution() { return m_Resolution; }
-	//static DisplayResolution Resolution() { return m_Resolution; };
 
 	static void ShowCursor();
 	static void HideCursor();
@@ -79,6 +78,5 @@ protected:
 	inline static bool bMinimized { false };
 	inline static bool bMaximized { false };
 	inline static bool bIsResizing{ false };
-
 
 };

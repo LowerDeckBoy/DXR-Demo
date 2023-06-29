@@ -1,7 +1,7 @@
 #include "Window.hpp"
 
-#pragma comment(lib, "dwmapi")
 #include <dwmapi.h>
+#pragma comment(lib, "dwmapi")
 
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE 
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
@@ -38,7 +38,6 @@ void Window::Initialize()
 	WNDCLASSEX wcex{};
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.hInstance = m_hInstance;
-	//wcex.lpfnWndProc = WindowProc;
 	wcex.lpfnWndProc = MsgProc;
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpszClassName = m_WindowClass;
@@ -57,9 +56,7 @@ void Window::Initialize()
 	m_hWnd = ::CreateWindow(m_WindowClass, m_WindowName, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, m_hInstance, 0);
 
 	if (!m_hWnd)
-	{
 		throw std::exception("Failed to Create Window!\n");
-	}
 
 	int xPos = (::GetSystemMetrics(SM_CXSCREEN) - m_Rect.right) / 2;
 	int yPos = (::GetSystemMetrics(SM_CYSCREEN) - m_Rect.bottom) / 2;
@@ -69,25 +66,6 @@ void Window::Initialize()
 	::DwmSetWindowAttribute(m_hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &bDarkMode, sizeof(bDarkMode));
 
 	bInitialized = true;
-}
-
-void Window::Run()
-{
-	Show();
-	MSG msg{};
-
-	while (msg.message != WM_QUIT)
-	{
-		if (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			::TranslateMessage(&msg);
-			::DispatchMessage(&msg);
-		}
-
-
-
-		// Render
-	}
 }
 
 void Window::Show()
