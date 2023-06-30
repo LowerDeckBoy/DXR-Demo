@@ -19,9 +19,11 @@ public:
 
 	void ResetCamera();
 
+	void ReadInputs();
+
 	const inline DirectX::XMMATRIX& GetView() const { return m_View; }
 	const inline DirectX::XMMATRIX& GetProjection() const { return m_Projection; }
-	const inline DirectX::XMMATRIX GetViewProjection() { return XMMatrixMultiply(m_View, m_Projection); }
+	const inline DirectX::XMMATRIX  GetViewProjection() { return XMMatrixMultiply(m_View, m_Projection); }
 
 	const inline DirectX::XMVECTOR& GetPosition() const { return m_Position; }
 	const inline DirectX::XMFLOAT3 GetPositionFloat() const { return DirectX::XMFLOAT3(m_Position.m128_f32[0], m_Position.m128_f32[1], m_Position.m128_f32[2]); }
