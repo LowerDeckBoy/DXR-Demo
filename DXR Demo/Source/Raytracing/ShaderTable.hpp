@@ -20,12 +20,12 @@ public:
 		m_Identifier.Size = Size;
 	}
 
-	TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsCount)
+	TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize)
 	{
 		m_Identifier.pData = pIdentifier;
 		m_Identifier.Size = Size;
 		m_LocalRootArgs.pData = pLocalRootArgs;
-		m_LocalRootArgs.Size = ArgsCount;
+		m_LocalRootArgs.Size = ArgsSize;
 	}
 
 	void CopyTo(void* pDestination)
@@ -59,8 +59,6 @@ public:
 		m_Records.reserve(NumShaderRecord);
 
 		uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
-		//Buffer::Allocate(pDevice, m_Resource.Get(), bufferSize);
-		//m_Storage = BufferUtils::Allocate(pDevice, bufferSize);
 		auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
 		BufferUtils::Create(pDevice, &m_Storage, bufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, uploadHeap);
 		m_MappedData = BufferUtils::MapCPU(m_Storage.Get());
@@ -71,7 +69,7 @@ public:
 
 	void AddRecord(TableRecord& Record)
 	{
-		m_Records.emplace_back(Record);
+		m_Records.push_back(Record);
 		Record.CopyTo(m_MappedData);
 		m_MappedData += m_ShaderRecordSize;
 	}
@@ -80,6 +78,8 @@ public:
 	{
 		m_Storage.Get()->SetName(Name.c_str());
 	}
+
+	uint32_t GetRecordsCount() const { return static_cast<uint32_t>(m_Records.size()); }
 
 	uint32_t GetShaderRecordSize() const { return m_ShaderRecordSize; }
 	ID3D12Resource* GetStorage() const { return m_Storage.Get(); }
