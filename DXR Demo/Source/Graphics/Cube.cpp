@@ -9,8 +9,8 @@ Cube::~Cube()
 void Cube::Create(DeviceContext* pDevice)
 {
 	assert(m_Device = pDevice);
-
-	std::vector<CubeVertex> m_Vertices{
+	/*
+	std::vector<CubeVertex> vertices{
 		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) },
 		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
 		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
@@ -21,7 +21,7 @@ void Cube::Create(DeviceContext* pDevice)
 		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) }
 	};
 
-	std::vector<uint32_t> m_Indices{
+	std::vector<uint32_t> indices{
 		0, 1, 2, 0, 2, 3,
 		4, 6, 5, 4, 7, 6,
 		4, 5, 1, 4, 1, 0,
@@ -29,16 +29,79 @@ void Cube::Create(DeviceContext* pDevice)
 		1, 5, 6, 1, 6, 2,
 		4, 0, 3, 4, 3, 7
 	};
-
+	
 	// Create Buffers
 	{
-		m_VertexBuffer.Create(m_Device, BufferData(m_Vertices.data(), static_cast<uint32_t>(m_Vertices.size()), sizeof(m_Vertices.at(0)) * m_Vertices.size()), BufferDesc());
+		m_VertexBuffer.Create(m_Device, BufferData(vertices.data(), static_cast<uint32_t>(vertices.size()), sizeof(vertices.at(0)) * vertices.size()), BufferDesc());
 	}
 	{
-		m_IndexBuffer.Create(m_Device, BufferData(m_Indices.data(), static_cast<uint32_t>(m_Indices.size()), m_Indices.size() * sizeof(uint32_t)), BufferDesc());
+		m_IndexBuffer.Create(m_Device, BufferData(indices.data(), static_cast<uint32_t>(indices.size()), indices.size() * sizeof(uint32_t)), BufferDesc());
+	}
+	*/
+	m_ConstBuffer.Create(pDevice, &m_cbData);
+	
+	// Normal
+	std::vector<uint32_t> indices =
+	{
+		3,1,0,
+		2,1,3,
+
+		6,4,5,
+		7,4,6,
+
+		11,9,8,
+		10,9,11,
+
+		14,12,13,
+		15,12,14,
+
+		19,17,16,
+		18,17,19,
+
+		22,20,21,
+		23,20,22
+	};
+
+	// Cube vertices positions and corresponding triangle normals.
+	std::vector<CubeNormal> vertices =
+	{
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+	};
+	
+	// Create Buffers
+	{
+		m_VertexBuffer.Create(m_Device, BufferData(vertices.data(), vertices.size(), sizeof(vertices.at(0)) * vertices.size(), sizeof(CubeNormal)), BufferDesc());
+		m_IndexBuffer.Create(m_Device, BufferData(indices.data(), indices.size(), indices.size() * sizeof(uint32_t), sizeof(uint32_t)), BufferDesc());
 	}
 
-	m_ConstBuffer.Create(pDevice, &m_cbData);
 }
 
 void Cube::Draw()
