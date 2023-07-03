@@ -8,12 +8,14 @@
 struct BufferData
 {
 	BufferData() {}
-	BufferData(void* pData, size_t Count, size_t Size) :
-		pData(pData), ElementsCount(static_cast<uint32_t>(Count)), Size(Size) { }
+	BufferData(void* pData, size_t Count, size_t Size, size_t Stride) :
+		pData(pData), ElementsCount(static_cast<uint32_t>(Count)), Size(Size), Stride(static_cast<uint32_t>(Stride))
+	{ }
 
 	void*	 pData{ nullptr };
 	uint32_t ElementsCount{ 0 };
 	size_t	 Size{ 0 };
+	uint32_t Stride{ 0 };
 };
 
 // Default properties
@@ -25,7 +27,7 @@ struct BufferDesc
 {
 	CD3DX12_HEAP_PROPERTIES HeapProperties{ D3D12_HEAP_TYPE_UPLOAD };
 	D3D12_HEAP_FLAGS		HeapFlags{ D3D12_HEAP_FLAG_NONE };
-	D3D12_RESOURCE_STATES	State{ D3D12_RESOURCE_STATE_COMMON };
+	D3D12_RESOURCE_STATES	State{ D3D12_RESOURCE_STATE_GENERIC_READ };
 	DXGI_FORMAT				Format{ DXGI_FORMAT_UNKNOWN };
 };
 
@@ -51,6 +53,17 @@ public:
 		MapMemory();
 
 		pDevice->GetMainHeap()->Allocate(m_Descriptor);
+		//srv
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srvDesc.Buffer.FirstElement = 0;
+		srvDesc.Buffer.NumElements = Data.ElementsCount;
+		srvDesc.Buffer.StructureByteStride = Data.Stride;
+		srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+		pDevice->GetDevice()->CreateShaderResourceView(m_Buffer.Get(), &srvDesc, m_Descriptor.GetCPU());
+
 	}
 
 	void MapMemory()
