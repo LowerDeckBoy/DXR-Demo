@@ -1,3 +1,5 @@
+#ifndef GLOBAL_VERTEX_HLSL
+#define GLOBAL_VERTEX_HLSL
 
 cbuffer cbPerObject : register(b0)
 {
@@ -9,14 +11,16 @@ cbuffer cbPerObject : register(b0)
 struct VS_INPUT
 {
     float3 Position : POSITION;
-    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    //float4 Color : COLOR;
 };
 
 struct VS_OUTPUT
 {
     float4 Position : SV_POSITION;
     float4 WorldPosition : WORLD_POSITION;
-    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    //float4 Color : COLOR;
 };
 
 
@@ -26,7 +30,10 @@ VS_OUTPUT main(VS_INPUT vin)
     
     output.Position      = mul(WVP, float4(vin.Position, 1.0f));
     output.WorldPosition = mul(World, float4(vin.Position, 1.0f));
-    output.Color         = vin.Color;
+    //output.Color         = vin.Color;
+    output.Normal        = normalize(vin.Normal);
     
     return output;
 }
+
+#endif // GLOBAL_VERTEX_HLSL
