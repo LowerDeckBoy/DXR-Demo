@@ -2,6 +2,7 @@
 #include "../Core/Window.hpp"
 #include "../Core/Renderer.hpp"
 
+// Application entry point
 class Engine : public Window
 {
 public:
