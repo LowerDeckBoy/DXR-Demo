@@ -10,16 +10,17 @@
 
 #include "../Rendering/Camera.hpp"
 
+#include "../Graphics/Cube.hpp"
 #include "../Raytracing/RaytracingContext.hpp"
 
 
 class Renderer
 {
 public:
-	Renderer();
+	Renderer(Camera* pCamera);
 	~Renderer();
 
-	void Initalize();
+	void Initalize(Camera* pCamera);
 	void LoadAssets();
 
 	void OnRaytrace();
@@ -58,6 +59,7 @@ private:
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	ComPtr<ID3D12PipelineState> m_PipelineState;
 
+	std::shared_ptr<ShaderManager> m_ShaderManager;
 	// Shaders
 	Shader m_VertexShader;
 	Shader m_PixelShader;
@@ -65,6 +67,8 @@ private:
 	// Triangle data
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndexBuffer;
+
+	Cube m_Cube;
 
 	// Raytracing
 	std::unique_ptr<RaytracingContext> m_RaytracingContext;

@@ -18,7 +18,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     uint vertId = 3 * PrimitiveIndex();
     float3 hitColor = TriVertex[vertId + 0].Color * barycentrics.x + TriVertex[vertId + 1].Color * barycentrics.y + TriVertex[vertId + 2].Color * barycentrics.z;
 
-    payload.ColorAndDistance = float4(hitColor, RayTCurrent());
+    payload.Color = float4(hitColor, RayTCurrent());
    
 }
 

@@ -69,6 +69,9 @@
     <ClInclude Include="3rd-party\d3dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Inputs\CameraInputs.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\DeviceContext.cpp">
@@ -107,15 +110,19 @@
     <ClCompile Include="Source\Raytracing\RaytracingContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Inputs\CameraInputs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\Shaders\Global_Vertex.hlsl" />
     <FxCompile Include="Assets\Shaders\Global_Pixel.hlsl" />
-    <FxCompile Include="Assets\Shaders\Vertex_01.hlsl" />
-    <FxCompile Include="Assets\Shaders\Pixel_01.hlsl" />
+    <FxCompile Include="Assets\Shaders\Vertex_Triangle.hlsl" />
+    <FxCompile Include="Assets\Shaders\Pixel_Triangle.hlsl" />
     <FxCompile Include="Assets\Raytracing\Common.hlsl" />
     <FxCompile Include="Assets\Raytracing\RayGen.hlsl" />
     <FxCompile Include="Assets\Raytracing\Miss.hlsl" />
     <FxCompile Include="Assets\Raytracing\Hit.hlsl" />
+    <FxCompile Include="Assets\Raytracing\Hit_3D.hlsl" />
   </ItemGroup>
 </Project>

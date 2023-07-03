@@ -11,8 +11,7 @@ void Camera::Initialize(float AspectRatio)
 	m_Up		= m_DefaultUp;
 
 	m_View = XMMatrixLookAtLH(m_Position, m_Target, m_Up);
-	auto FoV{ 0.4f * XM_PI };
-	m_Projection = XMMatrixPerspectiveFovLH(FoV, AspectRatio, m_zNear, m_zFar);
+	m_Projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), AspectRatio, m_zNear, m_zFar);
 	
 	m_CameraSlider = { XMVectorGetX(m_Position), XMVectorGetY(m_Position), XMVectorGetZ(m_Position) };
 }
@@ -94,6 +93,6 @@ void Camera::DrawGUI()
 */
 void Camera::OnAspectRatioChange(float NewAspectRatio)
 {
-	auto FoV{ 0.4f * XM_PI };
-	m_Projection = XMMatrixPerspectiveFovLH(FoV, NewAspectRatio, m_zNear, m_zFar);
+	//auto FoV{ 0.4f * XM_PI };
+	m_Projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), NewAspectRatio, m_zNear, m_zFar);
 }

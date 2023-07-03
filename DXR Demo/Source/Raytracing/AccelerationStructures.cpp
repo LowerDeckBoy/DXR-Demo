@@ -51,8 +51,7 @@ void BottomLevel::AddBuffers(VertexBuffer Vertex, IndexBuffer Index, bool bOpaqu
 
 	desc.Triangles.Transform3x4 = 0;
 
-	//m_Buffers.emplace_back(desc);
-	m_Buffers.push_back(desc);
+	m_Buffers.emplace_back(desc);
 }
 
 void BottomLevel::GetBufferSizes(ID3D12Device5* pDevice, uint64_t* pScratchSize, uint64_t* pResultSize, bool bAllowUpdate)
@@ -182,8 +181,6 @@ void AccelerationStructures::CreateBottomLevel(VertexBuffer& Vertex, IndexBuffer
 	m_BottomLevel.GetBufferSizes(m_Device->GetDevice(), &scratchSize, &resultSize, false);
 
 	auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
-	//m_BottomLevel.m_ScratchBuffer = BufferUtils::Create(m_Device->GetDevice(), scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, heapProperties);
-	//m_BottomLevel.m_ResultBuffer = BufferUtils::Create(m_Device->GetDevice(), resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, heapProperties);
 	BufferUtils::Create(m_Device->GetDevice(), &m_BottomLevel.m_ScratchBuffer, scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, heapProperties);
 	BufferUtils::Create(m_Device->GetDevice(), &m_BottomLevel.m_ResultBuffer, resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, heapProperties);
 

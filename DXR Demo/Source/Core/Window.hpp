@@ -10,6 +10,8 @@
 #include <memory>
 #include "../Utilities/Timer.hpp"
 
+// Done the ugly way but gets the jobs done
+// Will rework later, or not idk
 class Window
 {
 public:
@@ -17,7 +19,6 @@ public:
 	~Window();
 
 	void Initialize();
-	void Run();
 	void Show();
 
 	virtual void OnResize() = 0;
@@ -25,7 +26,7 @@ public:
 	virtual LRESULT WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) = 0;
 
 private:
-	HINSTANCE m_hInstance{ nullptr };
+	inline static HINSTANCE m_hInstance{ nullptr };
 	inline static HWND m_hWnd{ nullptr };
 
 	LPCWSTR m_WindowClass{ L"Main" };
@@ -59,7 +60,7 @@ protected:
 	} m_Resolution;
 
 public:
-	[[nodiscard]] inline HINSTANCE GetHInstance() const { return m_hInstance; }
+	[[nodiscard]] inline static HINSTANCE GetHInstance() { return m_hInstance; }
 	[[nodiscard]] inline static HWND GetHWND() { return m_hWnd; }
 
 	static DisplayResolution Resolution() { return m_Resolution; }

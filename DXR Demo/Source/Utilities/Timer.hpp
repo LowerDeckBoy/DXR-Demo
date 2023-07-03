@@ -6,17 +6,15 @@ class Timer
 public:
 	void Initialize()
 	{
-		__int64 countsPerSec{};
-		QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
-		m_SecondsPerCount = 1.0 / (double)countsPerSec;
+		uint64_t countsPerSec{};
+		::QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
+		m_SecondsPerCount = 1.0 / static_cast<double>(countsPerSec);
 	}
 
 	float TotalTime()
 	{
 		if (bIsStopped)
-		{
 			return static_cast<float>(((m_StopTime - m_PausedTime) - m_BaseTime) * m_SecondsPerCount);
-		}
 
 		return static_cast<float>(((m_CurrentTime - m_PausedTime) - m_BaseTime) * m_SecondsPerCount);
 	}
@@ -28,8 +26,8 @@ public:
 
 	void Reset()
 	{
-		__int64 currentTime{};
-		QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
+		uint64_t currentTime{};
+		::QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
 
 		m_BaseTime = currentTime;
 		m_PreviousTime = currentTime;
@@ -39,8 +37,8 @@ public:
 
 	void Start()
 	{
-		__int64 startTime{};
-		QueryPerformanceCounter((LARGE_INTEGER*)&startTime);
+		uint64_t startTime{};
+		::QueryPerformanceCounter((LARGE_INTEGER*)&startTime);
 
 		if (bIsStopped)
 		{
@@ -56,8 +54,8 @@ public:
 	{
 		if (!bIsStopped)
 		{
-			__int64 currentTime{};
-			QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
+			uint64_t currentTime{};
+			::QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
 
 			m_StopTime = currentTime;
 			bIsStopped = true;
@@ -72,8 +70,8 @@ public:
 			return;
 		}
 
-		__int64 currentTime{};
-		QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
+		uint64_t currentTime{};
+		::QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
 		m_CurrentTime = currentTime;
 
 		m_DeltaTime = (m_CurrentTime - m_PreviousTime) * m_SecondsPerCount;
@@ -116,8 +114,8 @@ private:
 	bool bIsStopped{ false };
 
 public:
-	int m_FrameCount{};
+	uint32_t m_FrameCount{};
 	float m_TimeElapsed{};
-	int m_FPS{};
+	uint32_t m_FPS{};
 	float m_Miliseconds{};
 };

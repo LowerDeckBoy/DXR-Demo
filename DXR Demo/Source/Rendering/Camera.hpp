@@ -21,14 +21,14 @@ public:
 
 	const inline DirectX::XMMATRIX& GetView() const { return m_View; }
 	const inline DirectX::XMMATRIX& GetProjection() const { return m_Projection; }
-	const inline DirectX::XMMATRIX GetViewProjection() { return XMMatrixMultiply(m_View, m_Projection); }
+	const inline DirectX::XMMATRIX  GetViewProjection() { return XMMatrixMultiply(m_View, m_Projection); }
 
 	const inline DirectX::XMVECTOR& GetPosition() const { return m_Position; }
 	const inline DirectX::XMFLOAT3 GetPositionFloat() const { return DirectX::XMFLOAT3(m_Position.m128_f32[0], m_Position.m128_f32[1], m_Position.m128_f32[2]); }
 	const inline DirectX::XMVECTOR& GetTarget() const { return m_Target; }
 	const inline DirectX::XMVECTOR& GetUp() const { return m_Up; }
 
-	void DrawGUI();
+	//void DrawGUI();
 
 	// Required when window is resizing
 	// thus Render Targets change their aspect ratio
@@ -51,7 +51,7 @@ private:
 	DirectX::XMVECTOR m_Right					{ DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f) };
 	DirectX::XMVECTOR m_Upward					{ DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f) };
 
-	DirectX::XMVECTOR const m_DefaultPosition	{ DirectX::XMVectorSet(0.0f, 2.5f, -8.0f, 0.0f) };
+	DirectX::XMVECTOR const m_DefaultPosition	{ DirectX::XMVectorSet(0.0f, 1.5f, -8.0f, 0.0f) };
 	DirectX::XMVECTOR const m_DefaultTarget		{ DirectX::XMVectorSet(0.0f, 5.0f, 0.0f, 0.0f) };
 	DirectX::XMVECTOR const m_DefaultUp			{ DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f) };
 
@@ -82,7 +82,6 @@ public:
 	// For GUI usage
 	std::array<float, 3> m_CameraSlider;
 
-	inline static float m_CameraSpeed{ 25.0f };
-private:
+	inline static float m_CameraSpeed{ 5.0f };
 
 };

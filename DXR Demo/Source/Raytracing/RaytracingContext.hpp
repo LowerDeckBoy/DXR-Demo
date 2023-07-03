@@ -8,11 +8,36 @@
 #include "ShaderTable.hpp"
 #include "AccelerationStructures.hpp"
 
+class Camera;
+
+// Scene buffer for 3D
+struct RaytraceBuffer
+{
+	DirectX::XMMATRIX ViewProjection;
+	DirectX::XMVECTOR CameraPosition;
+	DirectX::XMVECTOR LightPosition;
+	DirectX::XMVECTOR LightAmbient;
+	DirectX::XMVECTOR LightDiffuse;
+};
+
+struct CameraBuffer
+{
+	DirectX::XMMATRIX View;
+	DirectX::XMMATRIX Projection;
+	DirectX::XMMATRIX InversedView;
+	DirectX::XMMATRIX InversedProjection;
+};
+
+struct CubeBuffer
+{
+	DirectX::XMVECTOR CubeColor;
+};
 
 class RaytracingContext
 {
 public:
-	RaytracingContext(DeviceContext* pDeviceCtx, VertexBuffer& Vertex, IndexBuffer& Index);
+	RaytracingContext(DeviceContext* pDeviceCtx, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
+	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
 	~RaytracingContext();
 
 	void Create();
@@ -30,20 +55,24 @@ public:
 
 	void SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature);
 
+	//test
+	void SetConstBufferData();
+
 private:
 	DeviceContext* m_DeviceCtx{ nullptr };
+	ShaderManager* m_ShaderManager{ nullptr };
+	Camera* m_Camera{ nullptr };
 
 	std::unique_ptr<DescriptorHeap> m_RaytracingHeap;
 
-	ComPtr<ID3D12RootSignature> m_LocalRootSignature;
-	ComPtr<ID3D12RootSignature> m_GlobalRootSignature;
+	//ComPtr<ID3D12RootSignature> m_LocalRootSignature;
+	//ComPtr<ID3D12RootSignature> m_GlobalRootSignature;
 
 	ComPtr<ID3D12StateObject> m_StateObject;
 	ComPtr<ID3D12StateObjectProperties> m_StateObjectProperties;
 
 	ComPtr<ID3D12Resource> m_RaytracingOutput;
 	Descriptor m_OutputUAV;
-
 	Descriptor m_TopLevelView;
 
 	// Shaders data
@@ -52,9 +81,8 @@ private:
 	ComPtr<IDxcBlob> m_HitShader;
 
 	// Shader Root Signatures
-	ComPtr<ID3D12RootSignature> m_RayGenSignature;
-	ComPtr<ID3D12RootSignature> m_MissSignature;
-	ComPtr<ID3D12RootSignature> m_HitSignature;
+	ComPtr<ID3D12RootSignature> m_GlobalRootSignature;
+	ComPtr<ID3D12RootSignature> m_HitRootSignature;
 
 	uint32_t m_PayloadSize		{ 0 };
 	uint32_t m_AttributeSize	{ 0 };
@@ -76,6 +104,15 @@ private:
 	//std::unique_ptr<ShaderTableBuilder> m_ShaderTableBuilder;
 	//ComPtr<ID3D12Resource> m_ShaderTableStorage;
 
+	void UpdateCamera();
+	// Const buffer for 3D
+	ConstantBuffer<RaytraceBuffer> m_SceneBuffer;
+	RaytraceBuffer m_SceneData{};
+	ConstantBuffer<CameraBuffer> m_CameraBuffer;
+	CameraBuffer m_CameraData{};
+	ConstantBuffer<CubeBuffer> m_CubeBuffer;
+	CubeBuffer m_CubeData{};
+
 	// Shader names
 	// Those are associate with names given inside Raytracing shaders
 	// Thus those MUST match
@@ -85,4 +122,3 @@ private:
 	static const wchar_t* m_ClosestHitShaderName;
 
 };
-

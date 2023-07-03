@@ -1,3 +1,5 @@
+#ifndef VERTEX_TRIANGLE_HLSL
+#define VERTEX_TRIANGLE_HLSL
 
 struct VS_INPUT
 {
@@ -19,3 +21,5 @@ VS_OUTPUT main(VS_INPUT vin)
     
     return output;
 }
+
+#endif // VERTEX_TRIANGLE_HLSL

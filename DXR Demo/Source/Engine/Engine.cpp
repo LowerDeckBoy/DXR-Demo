@@ -1,4 +1,5 @@
 #include "Engine.hpp"
+#include "../Inputs/CameraInputs.hpp"
 
 Engine::Engine(HINSTANCE hInstance)
 	: Window(hInstance)
@@ -8,6 +9,7 @@ Engine::Engine(HINSTANCE hInstance)
 
 Engine::~Engine()
 {
+	Destroy();
 }
 
 void Engine::Initialize()
@@ -15,23 +17,24 @@ void Engine::Initialize()
 	m_Timer = std::make_unique<Timer>();
 	Window::Initialize();
 
-	m_Renderer = std::make_unique<Renderer>();
 	m_Camera = std::make_unique<Camera>();
+	m_Renderer = std::make_unique<Renderer>(m_Camera.get());
 	m_Camera->Initialize(Window::Resolution().AspectRatio);
 
 	m_Timer->Initialize();
+
+	CameraInputs::Init();
 }
 
 void Engine::Run()
 {
-	MSG msg{};
-
 	m_Camera->ResetCamera();
 
 	Show();
 	m_Timer->Reset();
 	m_Timer->Start();
 
+	MSG msg{};
 	while (msg.message != WM_QUIT)
 	{
 		if (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -39,6 +42,8 @@ void Engine::Run()
 			::TranslateMessage(&msg);
 			::DispatchMessage(&msg);
 		}
+
+		CameraInputs::ReadInputs(m_Camera.get(), m_Timer->DeltaTime());
 
 		m_Timer->Tick();
 		m_Timer->GetFrameStats();
@@ -58,6 +63,7 @@ void Engine::Run()
 
 void Engine::Destroy()
 {
+	CameraInputs::Release();
 }
 
 void Engine::OnResize()
