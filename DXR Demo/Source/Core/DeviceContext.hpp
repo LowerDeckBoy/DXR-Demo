@@ -7,12 +7,8 @@
 #include <d3dx12.h>
 //#include <D3D12MA/D3D12MemAlloc.h>
 #include "DescriptorHeap.hpp"
+#include <string>
 
-// TODO:
-struct DeviceInfo
-{
-
-};
 
 using Microsoft::WRL::ComPtr;
 class DeviceContext
@@ -112,5 +108,5 @@ public:
 	uint32_t GetRenderTargetHeapDescriptorSize() const { return m_RenderTargetHeapDescriptorSize; }
 
 	DescriptorHeap* GetMainHeap() { return m_MainHeap.get(); }
-};
 
+};

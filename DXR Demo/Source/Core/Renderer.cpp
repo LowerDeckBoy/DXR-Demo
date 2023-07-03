@@ -1,9 +1,9 @@
 #include "Renderer.hpp"
 #include "../Utilities/Utilities.hpp"
 
-Renderer::Renderer()
+Renderer::Renderer(Camera* pCamera)
 {
-	Initalize();
+	Initalize(pCamera);
 }
 
 Renderer::~Renderer()
@@ -11,16 +11,20 @@ Renderer::~Renderer()
 	Destroy();
 }
 
-void Renderer::Initalize()
+void Renderer::Initalize(Camera* pCamera)
 {
 	m_DeviceCtx = std::make_unique<DeviceContext>();
 	CreateDepthStencil();
 	CreatePipelines();
 
+	m_ShaderManager = std::make_shared<ShaderManager>();
+
 	LoadAssets();
 
 	// Pass current object geometry data
-	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_VertexBuffer, m_IndexBuffer);
+	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_VertexBuffer, m_IndexBuffer);
+	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
+	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
 
 	m_DeviceCtx->ExecuteCommandLists();
 	m_DeviceCtx->WaitForGPU();
@@ -29,6 +33,9 @@ void Renderer::Initalize()
 
 void Renderer::LoadAssets()
 {
+	m_Cube.Create(m_DeviceCtx.get());
+
+	// Triangle data
 	float aspectRatio{ m_DeviceCtx->GetViewport().Width / m_DeviceCtx->GetViewport().Height };
 	std::vector<SimpleVertex> triangleVertices = {
 			{ { +0.0f,  +0.25f * aspectRatio, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
@@ -40,9 +47,9 @@ void Renderer::LoadAssets()
 		0, 1, 2
 	};
 
-	m_VertexBuffer.Create(m_DeviceCtx.get(), BufferData(triangleVertices.data(), triangleVertices.size(), sizeof(triangleVertices.at(0)) * triangleVertices.size()), BufferDesc());
+	m_VertexBuffer.Create(m_DeviceCtx.get(), BufferData(triangleVertices.data(), triangleVertices.size(), sizeof(triangleVertices.at(0)) * triangleVertices.size(), sizeof(SimpleVertex)), BufferDesc());
 
-	m_IndexBuffer.Create(m_DeviceCtx.get(), BufferData(indices.data(), indices.size(), sizeof(uint32_t) * indices.size()), BufferDesc());
+	m_IndexBuffer.Create(m_DeviceCtx.get(), BufferData(indices.data(), indices.size(), sizeof(uint32_t) * indices.size(), sizeof(uint32_t)), BufferDesc());
 }
 
 void Renderer::OnRaytrace()
@@ -101,9 +108,11 @@ void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 		ClearRenderTarget();
 		m_DeviceCtx->GetCommandList()->SetPipelineState(m_PipelineState.Get());
 		m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
-		m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.View);
-		m_DeviceCtx->GetCommandList()->DrawInstanced(m_IndexBuffer.Count, 1, 0, 0);
+		// Triangle
+		//m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		//m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.View);
+		//m_DeviceCtx->GetCommandList()->DrawInstanced(m_IndexBuffer.Count, 1, 0, 0);
+		m_Cube.Draw(pCamera->GetViewProjection());
 	}
 	else // Raytrace
 	{
@@ -208,10 +217,10 @@ void Renderer::CreateDepthStencil()
 
 void Renderer::CreatePipelines()
 {
-	m_VertexShader.Create("Assets/Shaders/Vertex_01.hlsl", "vs_5_1");
-	m_PixelShader.Create("Assets/Shaders/Pixel_01.hlsl", "ps_5_1");
-	//m_VertexShader.Create("Assets/Shaders/Global_Vertex.hlsl", "vs_5_1");
-	//m_PixelShader.Create("Assets/Shaders/Global_Pixel.hlsl", "ps_5_1");
+	//m_VertexShader.Create("Assets/Shaders/Vertex_Triangle.hlsl", "vs_5_1");
+	//m_PixelShader.Create("Assets/Shaders/Pixel_Triangle.hlsl", "ps_5_1");
+	m_VertexShader.Create("Assets/Shaders/Global_Vertex.hlsl", "vs_5_1");
+	m_PixelShader.Create("Assets/Shaders/Global_Pixel.hlsl", "ps_5_1");
 
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges{};
 	// Vertex
@@ -234,8 +243,9 @@ void Renderer::CreatePipelines()
 		IID_PPV_ARGS(&m_RootSignature)));
 
 	std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs{};
-	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	inputElementDescs.at(1) = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	//inputElementDescs.at(1) = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs.at(1) = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	psoDesc.InputLayout = { inputElementDescs.data(), static_cast<uint32_t>(inputElementDescs.size())};
