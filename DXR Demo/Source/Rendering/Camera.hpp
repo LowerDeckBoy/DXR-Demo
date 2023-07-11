@@ -1,5 +1,4 @@
 #pragma once
-
 #include <array>
 #include <DirectXMath.h>
 
@@ -19,14 +18,14 @@ public:
 
 	void ResetCamera();
 
-	const inline DirectX::XMMATRIX& GetView() const { return m_View; }
-	const inline DirectX::XMMATRIX& GetProjection() const { return m_Projection; }
-	const inline DirectX::XMMATRIX  GetViewProjection() { return XMMatrixMultiply(m_View, m_Projection); }
+	const inline DirectX::XMMATRIX& GetView() const noexcept { return m_View; }
+	const inline DirectX::XMMATRIX& GetProjection() const noexcept { return m_Projection; }
+	const inline DirectX::XMMATRIX  GetViewProjection() noexcept { return XMMatrixMultiply(m_View, m_Projection); }
 
-	const inline DirectX::XMVECTOR& GetPosition() const { return m_Position; }
-	const inline DirectX::XMFLOAT3 GetPositionFloat() const { return DirectX::XMFLOAT3(m_Position.m128_f32[0], m_Position.m128_f32[1], m_Position.m128_f32[2]); }
-	const inline DirectX::XMVECTOR& GetTarget() const { return m_Target; }
-	const inline DirectX::XMVECTOR& GetUp() const { return m_Up; }
+	const inline DirectX::XMVECTOR& GetPosition() const noexcept { return m_Position; }
+	const inline DirectX::XMFLOAT3 GetPositionFloat() const noexcept { return DirectX::XMFLOAT3(m_Position.m128_f32[0], m_Position.m128_f32[1], m_Position.m128_f32[2]); }
+	const inline DirectX::XMVECTOR& GetTarget() const noexcept { return m_Target; }
+	const inline DirectX::XMVECTOR& GetUp() const noexcept { return m_Up; }
 
 	//void DrawGUI();
 
@@ -71,13 +70,13 @@ public:
 	float m_Pitch{ 0.0f };
 	float m_Yaw{ 0.0f };
 
-	float GetCameraSpeed() const { return m_CameraSpeed; };
-	void SetCameraSpeed(float NewSpeed) { m_CameraSpeed = NewSpeed; }
+	float GetCameraSpeed() const noexcept { return m_CameraSpeed; };
+	void SetCameraSpeed(float NewSpeed) noexcept { m_CameraSpeed = NewSpeed; }
 
-	float GetZNear() const    { return m_zNear; }
-	void SetZNear(float NewZ) { m_zNear = NewZ; }
-	float GetZFar() const     { return m_zFar; }
-	void SetZFar(float NewZ)  { m_zFar = NewZ; }
+	float GetZNear() const noexcept { return m_zNear; }
+	void SetZNear(float NewZ) noexcept { m_zNear = NewZ; }
+	float GetZFar() const noexcept { return m_zFar; }
+	void SetZFar(float NewZ) noexcept { m_zFar = NewZ; }
 
 	// For GUI usage
 	std::array<float, 3> m_CameraSlider;

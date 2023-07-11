@@ -14,13 +14,13 @@ inline constexpr uint32_t ALIGN(uint32_t Size, uint32_t Alignment)
 class TableRecord
 {
 public:
-	TableRecord(void* pIdentifier, uint32_t Size)
+	TableRecord(void* pIdentifier, uint32_t Size) noexcept
 	{
 		m_Identifier.pData = pIdentifier;
 		m_Identifier.Size = Size;
 	}
 
-	TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize)
+	TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize) noexcept
 	{
 		m_Identifier.pData = pIdentifier;
 		m_Identifier.Size = Size;
@@ -28,7 +28,7 @@ public:
 		m_LocalRootArgs.Size = ArgsSize;
 	}
 
-	void CopyTo(void* pDestination)
+	void CopyTo(void* pDestination) noexcept
 	{
 		uint8_t* pByteDestination{ static_cast<uint8_t*>(pDestination) };
 		//uint8_t* pByteDestination{ reinterpret_cast<uint8_t*>(pDestination) };
@@ -51,15 +51,15 @@ public:
 class ShaderTable
 {
 public:
-	ShaderTable() { }
+	ShaderTable() noexcept { }
 
 	void Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, std::wstring DebugName = L"")
 	{
 		m_ShaderRecordSize = ALIGN(ShaderRecordSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
 		m_Records.reserve(NumShaderRecord);
 
-		uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
-		auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
+		const uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
+		const auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
 		BufferUtils::Create(pDevice, &m_Storage, bufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, uploadHeap);
 		m_MappedData = BufferUtils::MapCPU(m_Storage.Get());
 
@@ -79,10 +79,10 @@ public:
 		m_Storage.Get()->SetName(Name.c_str());
 	}
 
-	uint32_t GetRecordsCount() const { return static_cast<uint32_t>(m_Records.size()); }
+	inline uint32_t GetRecordsCount() const noexcept { return static_cast<uint32_t>(m_Records.size()); }
 
-	uint32_t GetShaderRecordSize() const { return m_ShaderRecordSize; }
-	ID3D12Resource* GetStorage() const { return m_Storage.Get(); }
+	inline uint32_t GetShaderRecordSize() const noexcept { return m_ShaderRecordSize; }
+	inline ID3D12Resource* GetStorage() const noexcept { return m_Storage.Get(); }
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_Storage;
@@ -117,7 +117,7 @@ private:
 
 	struct RaytraceShader
 	{
-		RaytraceShader(std::wstring Entrypoint, std::vector<void*> pInputData)
+		RaytraceShader(std::wstring Entrypoint, std::vector<void*> pInputData) noexcept
 			: Name(std::move(Entrypoint)), InputData(std::move(pInputData))
 		{ }
 

@@ -38,7 +38,8 @@ class RaytracingContext
 public:
 	RaytracingContext(DeviceContext* pDeviceCtx, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
 	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
-	~RaytracingContext();
+	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index);
+	~RaytracingContext() noexcept(false);
 
 	void Create();
 	void OnRaytrace();
@@ -94,6 +95,9 @@ private:
 	// Geometry for lookup
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndexBuffer;
+
+	std::vector<VertexBuffer> m_VertexBuffers;
+	std::vector<IndexBuffer> m_IndexBuffers;
 
 	// Shader Table
 	ShaderTable m_RayGenTable;

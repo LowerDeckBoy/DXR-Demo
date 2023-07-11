@@ -23,8 +23,11 @@ void Renderer::Initalize(Camera* pCamera)
 
 	// Pass current object geometry data
 	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_VertexBuffer, m_IndexBuffer);
-	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
 	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
+	//std::vector<VertexBuffer> vertices{ m_Cube.m_VertexBuffer, m_Plane.m_VertexBuffer };
+	//std::vector<IndexBuffer> indices{ m_Cube.m_IndexBuffer, m_Plane.m_IndexBuffer };
+
+	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertices, indices);
 
 	m_DeviceCtx->ExecuteCommandLists();
 	m_DeviceCtx->WaitForGPU();
@@ -34,6 +37,7 @@ void Renderer::Initalize(Camera* pCamera)
 void Renderer::LoadAssets()
 {
 	m_Cube.Create(m_DeviceCtx.get());
+	m_Plane.Create(m_DeviceCtx.get());
 
 	// Triangle data
 	float aspectRatio{ m_DeviceCtx->GetViewport().Width / m_DeviceCtx->GetViewport().Height };
@@ -102,16 +106,14 @@ void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 	// Spacebar to switch modes
 	if (bRaster)
 	{
-		ID3D12DescriptorHeap* ppHeaps[] = { m_DeviceCtx->GetMainHeap()->GetHeap() };
-		m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+		std::array<ID3D12DescriptorHeap*, 1> ppHeaps{ m_DeviceCtx->GetMainHeap()->GetHeap() };
+		m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(static_cast<uint32_t>(ppHeaps.size()), ppHeaps.data());
+
 
 		ClearRenderTarget();
 		m_DeviceCtx->GetCommandList()->SetPipelineState(m_PipelineState.Get());
 		m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
-		// Triangle
-		//m_DeviceCtx->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		//m_DeviceCtx->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.View);
-		//m_DeviceCtx->GetCommandList()->DrawInstanced(m_IndexBuffer.Count, 1, 0, 0);
+		m_Plane.Draw(pCamera->GetViewProjection());
 		m_Cube.Draw(pCamera->GetViewProjection());
 	}
 	else // Raytrace
@@ -244,15 +246,17 @@ void Renderer::CreatePipelines()
 
 	std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs{};
 	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	//inputElementDescs.at(1) = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	inputElementDescs.at(1) = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	//inputElementDescs.at(1) = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	psoDesc.InputLayout = { inputElementDescs.data(), static_cast<uint32_t>(inputElementDescs.size())};
 	psoDesc.pRootSignature = m_RootSignature.Get();
 	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_VertexShader.GetData());
 	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_PixelShader.GetData());
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;

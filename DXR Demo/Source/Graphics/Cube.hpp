@@ -21,7 +21,8 @@ struct CubeNormal
 class Cube
 {
 public:
-	Cube() {}
+	Cube() = default;
+	Cube(DeviceContext* pDevice);
 	~Cube();
 
 	// Default colored Cube
@@ -32,15 +33,11 @@ public:
 
 //private:
 	DeviceContext* m_Device{ nullptr };
-	//VertexBuffer<CubeVertex> m_VertexBuffer;
-	//IndexBuffer m_IndexBuffer;
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndexBuffer;
 	
-
 	cbPerObject m_cbData{};
 	ConstantBuffer<cbPerObject> m_ConstBuffer;
-
 
 	/*
 	std::vector<CubeVertex> m_Vertices{

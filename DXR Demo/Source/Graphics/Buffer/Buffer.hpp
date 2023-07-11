@@ -3,15 +3,14 @@
 #include "../../Utilities/Utilities.hpp"
 #include "../../Core/DeviceContext.hpp"
 
-// TODO: Needs rework
 
 struct BufferData
 {
-	BufferData() {}
-	BufferData(void* pData, size_t Count, size_t Size, size_t Stride) :
+	BufferData() noexcept {}
+	BufferData(void* pData, size_t Count, size_t Size, size_t Stride) noexcept :
 		pData(pData), ElementsCount(static_cast<uint32_t>(Count)), Size(Size), Stride(static_cast<uint32_t>(Stride))
 	{ }
-
+	
 	void*	 pData{ nullptr };
 	uint32_t ElementsCount{ 0 };
 	size_t	 Size{ 0 };
@@ -40,7 +39,7 @@ public:
 		m_BufferDesc = Desc;
 		m_BufferData = Data;
 
-		auto heapDesc{ CD3DX12_RESOURCE_DESC::Buffer(Data.Size) };
+		const auto heapDesc{ CD3DX12_RESOURCE_DESC::Buffer(Data.Size) };
 		//auto 
 		ThrowIfFailed(pDevice->GetDevice()->CreateCommittedResource(
 			&Desc.HeapProperties,
@@ -69,13 +68,13 @@ public:
 	void MapMemory()
 	{
 		uint8_t* pDataBegin{};
-		CD3DX12_RANGE readRange(0, 0);
+		const CD3DX12_RANGE readRange(0, 0);
 		ThrowIfFailed(m_Buffer.Get()->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin)));
 		std::memcpy(pDataBegin, m_BufferData.pData, m_BufferData.Size);
 		m_Buffer.Get()->Unmap(0, nullptr);
 	}
 
-	ID3D12Resource* GetBuffer() const
+	ID3D12Resource* GetBuffer() const noexcept
 	{
 		return m_Buffer.Get();
 	}
@@ -85,8 +84,8 @@ public:
 		return m_Buffer.Get()->GetGPUVirtualAddress();
 	}
 
-	BufferDesc GetDesc() { return m_BufferDesc; }
-	BufferData GetData() { return m_BufferData; }
+	BufferDesc GetDesc() const noexcept { return m_BufferDesc; }
+	BufferData GetData() const noexcept { return m_BufferData; }
 
 	Descriptor m_Descriptor{};
 	Descriptor DescriptorSRV{};
@@ -104,7 +103,7 @@ protected:
 class VertexBuffer
 {
 public:
-	VertexBuffer() {}
+	VertexBuffer() noexcept {}
 	VertexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
 	{
 		Buffer.Create(pDevice, Data, Desc);
@@ -131,7 +130,7 @@ public:
 class IndexBuffer
 {
 public:
-	IndexBuffer() {}
+	IndexBuffer() noexcept {}
 	IndexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
 	{
 		Buffer.Create(pDevice, Data, Desc);
@@ -162,11 +161,6 @@ struct BufferSRV
 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
 	Descriptor DescriptorSRV;
-};
-
-struct BufferUAV
-{
-
 };
 
 // Utils
@@ -228,15 +222,14 @@ public:
 		desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		desc.SampleDesc = { 1, 0 };
 
-		ID3D12Resource* result{ nullptr };
 		ThrowIfFailed(pDevice->CreateCommittedResource(&HeapProps, HeapFlags, &desc, InitState, nullptr, IID_PPV_ARGS(&(*(ppTarget)))));
 	}
 
 
 	static void CreateUAV(DeviceContext* pDevice, ID3D12Resource** ppTargetResource, size_t BufferSize, D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_COMMON)
 	{
-		auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(BufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+		const auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		const auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(BufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 		ThrowIfFailed(pDevice->GetDevice()->CreateCommittedResource(
 			&uploadHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -266,13 +259,8 @@ public:
 		}
 
 		pDevice->GetMainHeap()->Allocate(DescriptorRef); 
-		try {
-			pDevice->GetDevice()->CreateShaderResourceView(pBuffer, &srvDesc, DescriptorRef.GetCPU());
-		}
-		catch (...)
-		{
-			throw std::exception();
-		}
+		pDevice->GetDevice()->CreateShaderResourceView(pBuffer, &srvDesc, DescriptorRef.GetCPU());
+
 	}
 
 	static void CreateSRV(DeviceContext* pDevice, Buffer* pBuffer)
@@ -302,8 +290,8 @@ public:
 
 	static void UploadBuffer(DeviceContext* pDevice, ID3D12Resource** ppTargetResource, void* pData, size_t DataSize)
 	{
-		auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-		auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(DataSize);
+		const auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		const auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(DataSize);
 		ThrowIfFailed(pDevice->GetDevice()->CreateCommittedResource(
 			&uploadHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -320,8 +308,8 @@ public:
 
 	static void Allocate(ID3D12Device5* pDevice, ID3D12Resource* pResource, uint32_t BufferSize)
 	{
-		auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
-		auto bufferDesc{ CD3DX12_RESOURCE_DESC::Buffer(BufferSize) };
+		const auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
+		const auto bufferDesc{ CD3DX12_RESOURCE_DESC::Buffer(BufferSize) };
 
 		ThrowIfFailed(pDevice->CreateCommittedResource(
 			&uploadHeap,
@@ -334,8 +322,8 @@ public:
 
 	static ID3D12Resource* Allocate(ID3D12Device5* pDevice, uint32_t BufferSize)
 	{
-		auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
-		auto bufferDesc{ CD3DX12_RESOURCE_DESC::Buffer(BufferSize) };
+		const auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
+		const auto bufferDesc{ CD3DX12_RESOURCE_DESC::Buffer(BufferSize) };
 
 		ID3D12Resource* resource{ nullptr };
 		ThrowIfFailed(pDevice->CreateCommittedResource(
@@ -352,8 +340,12 @@ public:
 	// Write only
 	static uint8_t* MapCPU(ID3D12Resource* pResource)
 	{
+		// temporal
+		if (!pResource)
+			return nullptr;
+
 		uint8_t* pMapped{ nullptr };
-		CD3DX12_RANGE range(0, 0);
+		const CD3DX12_RANGE range(0, 0);
 		ThrowIfFailed(pResource->Map(0, &range, reinterpret_cast<void**>(&pMapped)));
 
 		return pMapped;

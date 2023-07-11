@@ -11,6 +11,7 @@
 #include "../Rendering/Camera.hpp"
 
 #include "../Graphics/Cube.hpp"
+#include "../Graphics/Plane.hpp"
 #include "../Raytracing/RaytracingContext.hpp"
 
 
@@ -69,6 +70,7 @@ private:
 	IndexBuffer m_IndexBuffer;
 
 	Cube m_Cube;
+	Plane m_Plane;
 
 	// Raytracing
 	std::unique_ptr<RaytracingContext> m_RaytracingContext;

@@ -6,6 +6,11 @@ Cube::~Cube()
 	Release();
 }
 
+Cube::Cube(DeviceContext* pDevice)
+{
+	Create(pDevice);
+}
+
 void Cube::Create(DeviceContext* pDevice)
 {
 	assert(m_Device = pDevice);
@@ -104,14 +109,6 @@ void Cube::Create(DeviceContext* pDevice)
 
 }
 
-void Cube::Draw()
-{
-	//m_Device->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//m_Device->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.GetBufferView());
-	//m_Device->GetCommandList()->IASetIndexBuffer(&m_IndexBuffer.GetBufferView());
-	//m_Device->GetCommandList()->DrawIndexedInstanced(m_IndexBuffer.GetSize(), 1, 0, 0, 0);
-}
-
 void Cube::Draw(DirectX::XMMATRIX ViewProjection)
 {
 	m_Device->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -127,6 +124,8 @@ void Cube::Draw(DirectX::XMMATRIX ViewProjection)
 
 void Cube::Release()
 {
+	if (m_Device)
+		m_Device = nullptr;
 	//delete m_Vertices;
 	//delete m_Indices;
 }

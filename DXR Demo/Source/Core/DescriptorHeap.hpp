@@ -10,11 +10,11 @@ private:
 	D3D12_GPU_DESCRIPTOR_HANDLE m_gpuHandle{};
 
 public:
-	void SetCPU(D3D12_CPU_DESCRIPTOR_HANDLE Handle) { m_cpuHandle = Handle; }
-	void SetGPU(D3D12_GPU_DESCRIPTOR_HANDLE Handle) { m_gpuHandle = Handle; }
+	void SetCPU(D3D12_CPU_DESCRIPTOR_HANDLE Handle) noexcept { m_cpuHandle = Handle; }
+	void SetGPU(D3D12_GPU_DESCRIPTOR_HANDLE Handle) noexcept { m_gpuHandle = Handle; }
 
-	[[nodiscard]] inline D3D12_CPU_DESCRIPTOR_HANDLE GetCPU() const { return m_cpuHandle; }
-	[[nodiscard]] inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPU() const { return m_gpuHandle; }
+	[[nodiscard]] inline D3D12_CPU_DESCRIPTOR_HANDLE GetCPU() const noexcept { return m_cpuHandle; }
+	[[nodiscard]] inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPU() const noexcept { return m_gpuHandle; }
 
 };
 
@@ -38,18 +38,18 @@ public:
 		return D3D12_GPU_DESCRIPTOR_HANDLE(m_Heap.Get()->GetGPUDescriptorHandleForHeapStart().ptr + Index * m_DescriptorSize);
 	}
 
-	inline ID3D12DescriptorHeap* GetHeap() const { return m_Heap.Get(); }
-	inline ID3D12DescriptorHeap** GetHeapAddressOf() { return m_Heap.GetAddressOf(); }
+	inline ID3D12DescriptorHeap* GetHeap() noexcept { return m_Heap.Get(); }
+	inline ID3D12DescriptorHeap** GetHeapAddressOf() noexcept { return m_Heap.GetAddressOf(); }
 
-	[[maybe_unused]] inline uint32_t GetDescriptorSize() const { return m_DescriptorSize; }
-	[[maybe_unused]] inline uint32_t GetDescriptorsCount() const { return m_NumDescriptors; }
-	[[maybe_unused]] inline uint32_t GetAllocatedCount() const { return m_Allocated; }
+	[[maybe_unused]] inline uint32_t GetDescriptorSize() const noexcept { return m_DescriptorSize; }
+	[[maybe_unused]] inline uint32_t GetDescriptorsCount() const noexcept { return m_NumDescriptors; }
+	[[maybe_unused]] inline uint32_t GetAllocatedCount() const noexcept { return m_Allocated; }
 
-	void SetDescriptorSize(const uint32_t NewSize)
+	void SetDescriptorSize(const uint32_t NewSize) noexcept
 	{
 		m_DescriptorSize = NewSize;
 	}
-	void SetDescriptorsCount(const uint32_t Count)
+	void SetDescriptorsCount(const uint32_t Count) noexcept
 	{
 		m_NumDescriptors = Count;
 	}

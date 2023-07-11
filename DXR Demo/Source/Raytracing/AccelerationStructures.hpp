@@ -62,7 +62,7 @@ private:
 
 	struct Instance
 	{
-		Instance(ID3D12Resource* pBottomLevelBuffer, DirectX::XMMATRIX& Matrix, uint32_t InstanceID, uint32_t HitGroupID)
+		Instance(ID3D12Resource* pBottomLevelBuffer, DirectX::XMMATRIX& Matrix, uint32_t InstanceID, uint32_t HitGroupID) noexcept
 			: BottomLevel(pBottomLevelBuffer), Matrix(Matrix), InstanceID(InstanceID), HitGroupID(HitGroupID)
 		{ }
 
@@ -85,14 +85,19 @@ private:
 class AccelerationStructures
 {
 public:
-	void Init(DeviceContext* pDeviceCtx) { m_Device = pDeviceCtx; }
+	void Init(DeviceContext* pDeviceCtx) noexcept { m_Device = pDeviceCtx; }
 
 	void CreateBottomLevel(VertexBuffer& Vertex, IndexBuffer& Index, bool bOpaque = true);
+	//void CreateBottomLevel(std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index, bool bOpaque = true);
 
 	void CreateTopLevel(ID3D12Resource* pBuffer, DirectX::XMMATRIX& Matrix);
+	//void CreateTopLevel(std::vector<BottomLevel>& pBuffers, DirectX::XMMATRIX& Matrix);
+	//void CreateTopLevel(std::vector<ID3D12Resource*> pBuffers, DirectX::XMMATRIX& Matrix);
 
 	BottomLevel m_BottomLevel;
 	TopLevel	m_TopLevel;
+
+	std::vector<BottomLevel> m_BottomLevels;
 
 private:
 	DeviceContext* m_Device{ nullptr };

@@ -37,7 +37,23 @@ RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* p
 	Create();
 }
 
-RaytracingContext::~RaytracingContext()
+RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index)
+{
+	{
+		m_DeviceCtx = pDeviceCtx;
+		assert(m_DeviceCtx);
+		m_ShaderManager = pShaderManager;
+		m_Camera = pCamera;
+
+		m_VertexBuffers = Vertex;
+		m_IndexBuffers  = Index;
+	}
+
+	Create();
+
+}
+
+RaytracingContext::~RaytracingContext() noexcept(false)
 {
 	SAFE_RELEASE(m_GlobalRootSignature);
 	SAFE_RELEASE(m_HitRootSignature);
@@ -80,7 +96,7 @@ void RaytracingContext::Create()
 		m_CubeData = { XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f) };
 		m_CubeBuffer.Create(m_DeviceCtx, &m_CubeData);
 
-		XMVECTOR det;
+		XMVECTOR det{};
 		m_CameraData = {
 			m_Camera->GetView(),
 			m_Camera->GetProjection(),
@@ -334,19 +350,21 @@ void RaytracingContext::BuildAccelerationStructures()
 {
 	m_AS.Init(m_DeviceCtx);
 
-	m_AS.CreateBottomLevel(m_VertexBuffer, m_IndexBuffer, true);
 	DirectX::XMMATRIX matrix{ DirectX::XMMatrixIdentity() };
+	m_AS.CreateBottomLevel(m_VertexBuffer, m_IndexBuffer, true);
 	m_AS.CreateTopLevel(m_AS.m_BottomLevel.m_ResultBuffer.Get(), matrix);
+	//m_AS.CreateBottomLevel(m_VertexBuffers, m_IndexBuffers, true);
+	//m_AS.CreateTopLevel(m_AS.m_BottomLevels, matrix);
 
 	// Perhaps unnecessary for now
-	//m_DeviceCtx->WaitForGPU();
-	//m_DeviceCtx->FlushGPU();
+	m_DeviceCtx->WaitForGPU();
+	m_DeviceCtx->FlushGPU();
 
 }
 
 void RaytracingContext::BuildShaderTables()
 {
-	uint32_t shaderIdentifierSize{ D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES };
+	const uint32_t shaderIdentifierSize{ D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES };
 	
 	// Unnecessary
 	//const D3D12_GPU_DESCRIPTOR_HANDLE rtvHandle{ m_DeviceCtx->GetMainHeap()->GetHeap()->GetGPUDescriptorHandleForHeapStart() };
@@ -374,11 +392,11 @@ void RaytracingContext::BuildShaderTables()
 		//auto* pVertex{ reinterpret_cast<void*>(m_VertexBuffer.Buffer.GetBuffer()->GetGPUVirtualAddress()) };
 		//auto* pIndex{ reinterpret_cast<void*>(m_IndexBuffer.Buffer.GetBuffer()->GetGPUVirtualAddress()) };
 
-		auto cbSize{ sizeof(m_CubeData) };
+		const auto cbSize{ sizeof(m_CubeData) };
 		m_CubeData = { XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f) };
 		struct Args {
 			XMVECTOR cb;
-		} cubeBuffer;
+		} cubeBuffer{};
 		cubeBuffer.cb = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
 
 		m_HitTable.Create(m_DeviceCtx->GetDevice(), 1, shaderIdentifierSize + sizeof(Args), L"Hit Shader Table");
@@ -387,7 +405,7 @@ void RaytracingContext::BuildShaderTables()
 	}
 }
 
-void RaytracingContext::SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature)
+void RaytracingContext::SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) 
 {
 	ComPtr<ID3DBlob> blob;
 	ComPtr<ID3DBlob> error;
@@ -411,7 +429,7 @@ void RaytracingContext::SetConstBufferData()
 
 void RaytracingContext::UpdateCamera()
 {
-	XMVECTOR det;
+	XMVECTOR det{};
 	m_CameraData = {
 		m_Camera->GetView(),
 		m_Camera->GetProjection(),

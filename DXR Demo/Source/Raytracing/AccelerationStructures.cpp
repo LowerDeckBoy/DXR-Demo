@@ -187,7 +187,29 @@ void AccelerationStructures::CreateBottomLevel(VertexBuffer& Vertex, IndexBuffer
 	m_BottomLevel.Create(m_Device->GetCommandList(), m_BottomLevel.m_ScratchBuffer.Get(), m_BottomLevel.m_ResultBuffer.Get());
 
 }
+/*
+void AccelerationStructures::CreateBottomLevel(std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index, bool bOpaque)
+{
+	
+	for (size_t i = 0; i < Vertex.size(); i++)
+	{
+		BottomLevel bottomLevel;
 
+		bottomLevel.AddBuffers(Vertex.at(i), Index.at(i), bOpaque);
+
+		uint64_t scratchSize{ 0 };
+		uint64_t resultSize{ 0 };
+		bottomLevel.GetBufferSizes(m_Device->GetDevice(), &scratchSize, &resultSize, false);
+
+		auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
+		BufferUtils::Create(m_Device->GetDevice(), &bottomLevel.m_ScratchBuffer, scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, heapProperties);
+		BufferUtils::Create(m_Device->GetDevice(), &bottomLevel.m_ResultBuffer, resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, heapProperties);
+
+		bottomLevel.Create(m_Device->GetCommandList(), bottomLevel.m_ScratchBuffer.Get(), bottomLevel.m_ResultBuffer.Get());
+		m_BottomLevels.emplace_back(bottomLevel);
+	}
+}
+*/
 void AccelerationStructures::CreateTopLevel(ID3D12Resource* pBuffer, DirectX::XMMATRIX& Matrix)
 {
 	//m_TopLevel.AddInstance(pBuffer, Matrix, 0, 0);
@@ -211,3 +233,31 @@ void AccelerationStructures::CreateTopLevel(ID3D12Resource* pBuffer, DirectX::XM
 	m_TopLevel.Create(m_Device->GetCommandList(), m_TopLevel.m_ScratchBuffer.Get(), m_TopLevel.m_ResultBuffer.Get(), m_TopLevel.m_InstanceDescsBuffer.Get());
 
 }
+/*
+void AccelerationStructures::CreateTopLevel(std::vector<BottomLevel>& pBuffers, DirectX::XMMATRIX& Matrix)
+{
+	for (size_t i = 0; i < m_BottomLevels.size(); i++)
+	{
+		auto m{ DirectX::XMMatrixIdentity() };
+		//m_TopLevel.AddInstance(pBuffers.at(i).m_ResultBuffer.Get(), m, 0, 0);
+		m_TopLevel.AddInstance(pBuffers.at(i).m_ResultBuffer.Get(), m, i, 0);
+	}
+
+	uint64_t scratchSize{};
+	uint64_t resultSize{};
+	uint64_t instancesDescSize{};
+
+	auto device{ m_Device->GetDevice() };
+	m_TopLevel.GetBufferSizes(device, &scratchSize, &resultSize, &instancesDescSize, false);
+
+	auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
+	m_TopLevel.m_ScratchBuffer = BufferUtils::Create(device, scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, heapProperties);
+	m_TopLevel.m_ResultBuffer = BufferUtils::Create(device, resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, heapProperties);
+
+	heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	m_TopLevel.m_InstanceDescsBuffer = BufferUtils::Create(device, instancesDescSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, heapProperties);
+
+	m_TopLevel.Create(m_Device->GetCommandList(), m_TopLevel.m_ScratchBuffer.Get(), m_TopLevel.m_ResultBuffer.Get(), m_TopLevel.m_InstanceDescsBuffer.Get());
+	
+}
+*/

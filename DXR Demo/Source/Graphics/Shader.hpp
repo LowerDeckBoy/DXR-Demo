@@ -41,10 +41,10 @@ public:
 	static IDxcBlob* CreateDXIL(const std::string_view& Filepath);
 
 	[[nodiscard]]
-	inline ID3DBlob* GetData() const { return Blob.Get(); }
-	// For Shader model of 6.0+
+	inline ID3DBlob* GetData() const noexcept { return Blob.Get(); }
+	// For Shader model of 6.x
 	[[nodiscard]]
-	inline IDxcBlob* GetData6() const { return Blob6.Get(); }
+	inline IDxcBlob* GetData6() const noexcept { return Blob6.Get(); }
 
 private:
 	Microsoft::WRL::ComPtr<ID3DBlob> Blob;
