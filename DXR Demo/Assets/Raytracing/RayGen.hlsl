@@ -33,7 +33,8 @@ void RayGen()
     // TMin -> zNear, TMax -> zFar
     ray.TMin = 0.01f;
     ray.TMax = 100000.0f;
-    TraceRay(SceneTopLevel, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
+    //RAY_FLAG_CULL_BACK_FACING_TRIANGLES
+    TraceRay(SceneTopLevel, RAY_FLAG_NONE, ~0, 0, 1, 0, ray, payload);
     
     RaytraceScene[launchIndex] = payload.Color;
 }
