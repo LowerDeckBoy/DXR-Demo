@@ -2,6 +2,8 @@
 #include "../Core/Window.hpp"
 #include "../Core/Renderer.hpp"
 
+class Camera;
+
 // Application entry point
 class Engine : public Window
 {

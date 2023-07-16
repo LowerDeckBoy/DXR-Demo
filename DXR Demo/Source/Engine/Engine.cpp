@@ -1,5 +1,8 @@
 #include "Engine.hpp"
 #include "../Inputs/CameraInputs.hpp"
+#include "../Rendering/Camera.hpp"
+#include <imgui/imgui.h>
+
 
 Engine::Engine(HINSTANCE hInstance)
 	: Window(hInstance)
@@ -18,7 +21,7 @@ void Engine::Initialize()
 	Window::Initialize();
 
 	m_Camera = std::make_unique<Camera>();
-	m_Renderer = std::make_unique<Renderer>(m_Camera.get());
+	m_Renderer = std::make_unique<Renderer>(m_Camera.get(), m_Timer.get());
 	m_Camera->Initialize(Window::Resolution().AspectRatio);
 
 	m_Timer->Initialize();
@@ -70,8 +73,12 @@ void Engine::OnResize()
 {
 }
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
+		return true;
+
 	switch (Msg)
 	{
 	case WM_ACTIVATE:
