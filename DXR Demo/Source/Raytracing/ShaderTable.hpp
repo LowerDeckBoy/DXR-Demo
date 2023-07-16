@@ -1,42 +1,18 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl.h>
-#include <cstdint>
-#include <memory>
 #include <vector>
-#include "../Graphics/Buffer/Buffer.hpp"
+#include <string>
 
-inline constexpr uint32_t ALIGN(uint32_t Size, uint32_t Alignment)
-{
-	return (Size + (Alignment + 1)) & ~(Alignment - 1);
-}
 
 class TableRecord
 {
 public:
-	TableRecord(void* pIdentifier, uint32_t Size) noexcept
-	{
-		m_Identifier.pData = pIdentifier;
-		m_Identifier.Size = Size;
-	}
+	TableRecord(void* pIdentifier, uint32_t Size) noexcept;
+	TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize) noexcept;
 
-	TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize) noexcept
-	{
-		m_Identifier.pData = pIdentifier;
-		m_Identifier.Size = Size;
-		m_LocalRootArgs.pData = pLocalRootArgs;
-		m_LocalRootArgs.Size = ArgsSize;
-	}
-
-	void CopyTo(void* pDestination) noexcept
-	{
-		uint8_t* pByteDestination{ static_cast<uint8_t*>(pDestination) };
-		//uint8_t* pByteDestination{ reinterpret_cast<uint8_t*>(pDestination) };
-		std::memcpy(pByteDestination, m_Identifier.pData, m_Identifier.Size);
-		if (m_LocalRootArgs.pData != nullptr)
-			std::memcpy(pByteDestination + m_Identifier.Size, m_LocalRootArgs.pData, m_LocalRootArgs.Size);
-	}
-
+	void CopyTo(void* pDestination) noexcept;
+	
 	struct Identifier
 	{
 		void* pData{ nullptr };
@@ -51,33 +27,13 @@ public:
 class ShaderTable
 {
 public:
-	ShaderTable() noexcept { }
+	ShaderTable() { }
 
-	void Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, std::wstring DebugName = L"")
-	{
-		m_ShaderRecordSize = ALIGN(ShaderRecordSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
-		m_Records.reserve(NumShaderRecord);
-
-		const uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
-		const auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
-		BufferUtils::Create(pDevice, &m_Storage, bufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, uploadHeap);
-		m_MappedData = BufferUtils::MapCPU(m_Storage.Get());
-
-		if (!DebugName.empty())
-			SetTableName(DebugName);
-	}
-
-	void AddRecord(TableRecord& Record)
-	{
-		m_Records.push_back(Record);
-		Record.CopyTo(m_MappedData);
-		m_MappedData += m_ShaderRecordSize;
-	}
-
-	void SetTableName(std::wstring Name)
-	{
-		m_Storage.Get()->SetName(Name.c_str());
-	}
+	void Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, std::wstring DebugName = L"");
+	
+	void AddRecord(TableRecord& Record);
+	
+	void SetTableName(std::wstring Name);
 
 	inline uint32_t GetRecordsCount() const noexcept { return static_cast<uint32_t>(m_Records.size()); }
 
@@ -94,6 +50,7 @@ private:
 };
 
 // For single buffer usage
+/*
 class ShaderTableBuilder
 {
 public:
@@ -139,3 +96,4 @@ private:
 	uint32_t m_IdentifierSize{ D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES };
 
 };
+*/

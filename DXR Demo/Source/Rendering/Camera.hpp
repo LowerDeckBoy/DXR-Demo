@@ -7,16 +7,16 @@ class Camera
 public:
 	Camera operator=(const Camera&) = delete;
 
-	void Initialize(float AspectRatio);
-	void Update();
+	void Initialize(float AspectRatio) noexcept;
+	void Update() noexcept;
 
-	void SetPosition(const DirectX::XMVECTOR NewPosition);
-	void SetPosition(const std::array<float, 3> NewPosition);
+	void SetPosition(const DirectX::XMVECTOR NewPosition) noexcept;
+	void SetPosition(const std::array<float, 3> NewPosition) noexcept;
 
-	void ResetPitch();
-	void ResetYaw();
+	void ResetPitch() noexcept;
+	void ResetYaw() noexcept;
 
-	void ResetCamera();
+	void ResetCamera() noexcept;
 
 	const inline DirectX::XMMATRIX& GetView() const noexcept { return m_View; }
 	const inline DirectX::XMMATRIX& GetProjection() const noexcept { return m_Projection; }
@@ -31,7 +31,7 @@ public:
 
 	// Required when window is resizing
 	// thus Render Targets change their aspect ratio
-	void OnAspectRatioChange(float NewAspectRatio);
+	void OnAspectRatioChange(float NewAspectRatio) noexcept;
 
 private:
 	DirectX::XMMATRIX m_View					{ DirectX::XMMATRIX() };

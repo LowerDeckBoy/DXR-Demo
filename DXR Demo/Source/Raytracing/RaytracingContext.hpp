@@ -5,10 +5,12 @@
 #include "../Core/DeviceContext.hpp"
 #include "../Graphics/Buffer/ConstantBuffer.hpp"
 #include "../Graphics/Shader.hpp"
-#include "ShaderTable.hpp"
 #include "AccelerationStructures.hpp"
+#include "ShaderTable.hpp"
 
 class Camera;
+class VertexBuffer;
+class IndexBuffer;
 
 // Scene buffer for 3D
 struct RaytraceBuffer
@@ -33,6 +35,17 @@ struct CubeBuffer
 	DirectX::XMVECTOR CubeColor;
 };
 
+// TODO:
+enum class LocalRootArguments : uint8_t
+{
+
+};
+
+enum class GlobalRootArguments : uint8_t
+{
+
+};
+
 class RaytracingContext
 {
 public:
@@ -54,10 +67,13 @@ public:
 
 	void OutputToBackbuffer();
 
-	void SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature);
+	[[maybe_unused]]
+	void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) const;
 
 	//test
 	void SetConstBufferData();
+
+	void DrawGUI();
 
 private:
 	DeviceContext* m_DeviceCtx{ nullptr };
@@ -65,9 +81,6 @@ private:
 	Camera* m_Camera{ nullptr };
 
 	std::unique_ptr<DescriptorHeap> m_RaytracingHeap;
-
-	//ComPtr<ID3D12RootSignature> m_LocalRootSignature;
-	//ComPtr<ID3D12RootSignature> m_GlobalRootSignature;
 
 	ComPtr<ID3D12StateObject> m_StateObject;
 	ComPtr<ID3D12StateObjectProperties> m_StateObjectProperties;
@@ -116,6 +129,11 @@ private:
 	CameraBuffer m_CameraData{};
 	ConstantBuffer<CubeBuffer> m_CubeBuffer;
 	CubeBuffer m_CubeData{};
+
+	// Light data for shading
+	std::array<float, 3> m_LightPosition{ 0.0f, 1.5f, -8.0f };
+	std::array<float, 4> m_LightAmbient{ 0.5f, 0.5f, 0.5f, 1.0f };
+	std::array<float, 4> m_LightDiffuse{ 1.0f, 0.0f, 0.0f, 1.0f };
 
 	// Shader names
 	// Those are associate with names given inside Raytracing shaders

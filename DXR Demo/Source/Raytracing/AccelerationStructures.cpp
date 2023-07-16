@@ -1,5 +1,6 @@
 #include "AccelerationStructures.hpp"
 #include "../Graphics/Buffer/Buffer.hpp"
+#include "../Graphics/Buffer/BufferUtils.hpp"
 #include "../Utilities/Utilities.hpp"
 
 #ifndef ALIGN
@@ -95,7 +96,6 @@ void TopLevel::Create(ID3D12GraphicsCommandList4* pCommandList, ID3D12Resource* 
 
 	if (!descs)
 	{
-		::OutputDebugStringA("Failed to cast Descriptor Buffers\n");
 		throw std::exception("Failed to cast Descriptor Buffers");
 	}
 

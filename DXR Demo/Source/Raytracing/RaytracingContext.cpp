@@ -1,7 +1,9 @@
+#include "../Graphics/Buffer/Buffer.hpp"
 #include "RaytracingContext.hpp"
 #include <array>
 #include "../Rendering/Camera.hpp"
 #include "../Utilities/Utilities.hpp"
+#include <imgui/imgui.h>
 
 const wchar_t* RaytracingContext::m_HitGroupName			= L"HitGroup";
 const wchar_t* RaytracingContext::m_RayGenShaderName		= L"RayGen";
@@ -40,10 +42,9 @@ RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* p
 RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index)
 {
 	{
-		m_DeviceCtx = pDeviceCtx;
-		assert(m_DeviceCtx);
-		m_ShaderManager = pShaderManager;
-		m_Camera = pCamera;
+		assert(m_DeviceCtx = pDeviceCtx);
+		assert(m_ShaderManager = pShaderManager);
+		assert(m_Camera = pCamera);
 
 		m_VertexBuffers = Vertex;
 		m_IndexBuffers  = Index;
@@ -87,9 +88,9 @@ void RaytracingContext::Create()
 	{
 		m_SceneData = { XMMatrixIdentity() * m_Camera->GetViewProjection(),
 			m_Camera->GetPosition(),
-			XMVectorSet(0.25f, 0.25f, 0.25f, 1.0f),
-			XMVectorSet(0.8f, 0.25f, 0.9f, 1.0f),
-			XMVectorSet(0.8f, 0.25f, 0.9f, 1.0f) 
+			XMVectorSet(0.0f, 1.5f, -8.0f, 1.0f),
+			XMVectorSet(0.5f, 0.5f, 0.5f, 1.0f),
+			XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f)
 		};
 
 		m_SceneBuffer.Create(m_DeviceCtx, &m_SceneData);
@@ -125,6 +126,8 @@ void RaytracingContext::OnRaytrace()
 
 	DispatchRaytrace();
 	OutputToBackbuffer();
+
+	DrawGUI();
 }
 
 void RaytracingContext::DispatchRaytrace()
@@ -259,7 +262,7 @@ void RaytracingContext::CreateStateObject()
 	// RayGen
 	auto raygenLib{ raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>() };
 	{
-		auto raygenBytecode{ CD3DX12_SHADER_BYTECODE(m_RayGenShader->GetBufferPointer(), m_RayGenShader->GetBufferSize()) };
+		const auto raygenBytecode{ CD3DX12_SHADER_BYTECODE(m_RayGenShader->GetBufferPointer(), m_RayGenShader->GetBufferSize()) };
 		raygenLib->SetDXILLibrary(&raygenBytecode);
 		raygenLib->DefineExport(m_RayGenShaderName);
 	}
@@ -267,7 +270,7 @@ void RaytracingContext::CreateStateObject()
 	// Miss
 	auto missLib{ raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>() };
 	{
-		auto missBytecode{ CD3DX12_SHADER_BYTECODE(m_MissShader->GetBufferPointer(), m_MissShader->GetBufferSize()) };
+		const auto missBytecode{ CD3DX12_SHADER_BYTECODE(m_MissShader->GetBufferPointer(), m_MissShader->GetBufferSize()) };
 		missLib->SetDXILLibrary(&missBytecode);
 		missLib->DefineExport(m_MissShaderName);
 	}
@@ -275,7 +278,7 @@ void RaytracingContext::CreateStateObject()
 	// Closest Hit
 	auto hitLib{ raytracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>() };
 	{
-		auto hitBytecode{ CD3DX12_SHADER_BYTECODE(m_HitShader->GetBufferPointer(), m_HitShader->GetBufferSize()) };
+		const auto hitBytecode{ CD3DX12_SHADER_BYTECODE(m_HitShader->GetBufferPointer(), m_HitShader->GetBufferSize()) };
 		hitLib->SetDXILLibrary(&hitBytecode);
 		hitLib->DefineExport(m_ClosestHitShaderName);
 	}
@@ -364,7 +367,7 @@ void RaytracingContext::BuildAccelerationStructures()
 
 void RaytracingContext::BuildShaderTables()
 {
-	const uint32_t shaderIdentifierSize{ D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES };
+	constexpr uint32_t shaderIdentifierSize{ D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES };
 	
 	// Unnecessary
 	//const D3D12_GPU_DESCRIPTOR_HANDLE rtvHandle{ m_DeviceCtx->GetMainHeap()->GetHeap()->GetGPUDescriptorHandleForHeapStart() };
@@ -392,7 +395,7 @@ void RaytracingContext::BuildShaderTables()
 		//auto* pVertex{ reinterpret_cast<void*>(m_VertexBuffer.Buffer.GetBuffer()->GetGPUVirtualAddress()) };
 		//auto* pIndex{ reinterpret_cast<void*>(m_IndexBuffer.Buffer.GetBuffer()->GetGPUVirtualAddress()) };
 
-		const auto cbSize{ sizeof(m_CubeData) };
+		constexpr auto cbSize{ sizeof(m_CubeData) };
 		m_CubeData = { XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f) };
 		struct Args {
 			XMVECTOR cb;
@@ -405,7 +408,7 @@ void RaytracingContext::BuildShaderTables()
 	}
 }
 
-void RaytracingContext::SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) 
+void RaytracingContext::SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) const
 {
 	ComPtr<ID3DBlob> blob;
 	ComPtr<ID3DBlob> error;
@@ -416,15 +419,40 @@ void RaytracingContext::SerializeAndCreateRootSignature(D3D12_ROOT_SIGNATURE_DES
 
 void RaytracingContext::SetConstBufferData()
 {
-	m_SceneData = { XMMatrixTranspose(XMMatrixInverse(nullptr, m_Camera->GetViewProjection())),
-		m_Camera->GetPosition(),
-		XMVectorSet(0.0f, 1.8f, -3.0f, 1.0f),
-		XMVectorSet(0.5f, 0.5f, 0.5f, 1.0f),
-		XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f) };
+	m_SceneData.ViewProjection = XMMatrixTranspose(XMMatrixInverse(nullptr, m_Camera->GetViewProjection()));
+	m_SceneData.CameraPosition = m_Camera->GetPosition();
+
 	m_SceneBuffer.Update(m_SceneData, m_DeviceCtx->FRAME_INDEX);
 		
 	m_CubeData = { XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f) };
 	m_CubeBuffer.Update(m_CubeData, m_DeviceCtx->FRAME_INDEX);
+}
+
+void RaytracingContext::DrawGUI()
+{
+	ImGui::Begin("Raytrace Lighting");
+
+	if (ImGui::DragFloat3("Position", m_LightPosition.data()))
+	{
+		m_SceneData.LightPosition = XMVectorSet(m_LightPosition.at(0), m_LightPosition.at(1), m_LightPosition.at(2), 1.0f);
+	}
+
+	if (ImGui::ColorEdit4("Ambient", m_LightAmbient.data()))
+	{
+		m_SceneData.LightAmbient = XMVectorSet(m_LightAmbient.at(0), m_LightAmbient.at(1), m_LightAmbient.at(2), m_LightAmbient.at(3));
+	}
+
+	if (ImGui::ColorEdit4("Diffuse", m_LightDiffuse.data()))
+	{
+		m_SceneData.LightDiffuse = XMVectorSet(m_LightDiffuse.at(0), m_LightDiffuse.at(1), m_LightDiffuse.at(2), m_LightDiffuse.at(3));
+	}
+
+	//if (ImGui::ColorEdit4("Albedo"))
+	//{
+	//
+	//}
+
+	ImGui::End();
 }
 
 void RaytracingContext::UpdateCamera()

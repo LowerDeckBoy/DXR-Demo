@@ -3,7 +3,7 @@
 
 using namespace DirectX;
 
-void Camera::Initialize(float AspectRatio)
+void Camera::Initialize(float AspectRatio) noexcept
 {
 	// Defaulting position on startup
 	m_Position	= m_DefaultPosition;
@@ -16,12 +16,12 @@ void Camera::Initialize(float AspectRatio)
 	m_CameraSlider = { XMVectorGetX(m_Position), XMVectorGetY(m_Position), XMVectorGetZ(m_Position) };
 }
 
-void Camera::Update()
+void Camera::Update() noexcept
 {
 	m_RotationMatrix = XMMatrixRotationRollPitchYaw(m_Pitch, m_Yaw, 0.0f);
 	m_Target = XMVector3Normalize(XMVector3TransformCoord(m_DefaultForward, m_RotationMatrix));
 
-	XMMATRIX rotation{ XMMatrixRotationY(m_Yaw) };
+	const XMMATRIX rotation{ XMMatrixRotationY(m_Yaw) };
 
 	m_Forward = XMVector3TransformCoord(m_DefaultForward, rotation);
 	m_Right = XMVector3TransformCoord(m_DefaultRight, rotation);
@@ -38,30 +38,30 @@ void Camera::Update()
 	m_Target += m_Position;
 	
 	m_View = XMMatrixLookAtLH(m_Position, m_Target, m_Up);
-	m_CameraSlider = { XMVectorGetX(m_Position), XMVectorGetY(m_Position), XMVectorGetZ(m_Position) };
+	//m_CameraSlider = { XMVectorGetX(m_Position), XMVectorGetY(m_Position), XMVectorGetZ(m_Position) };
 }
 
-void Camera::SetPosition(const DirectX::XMVECTOR NewPosition)
+void Camera::SetPosition(const DirectX::XMVECTOR NewPosition) noexcept
 {
 	m_Position = NewPosition;
 }
 
-void Camera::SetPosition(const std::array<float, 3> NewPosition)
+void Camera::SetPosition(const std::array<float, 3> NewPosition) noexcept
 {
 	m_Position = XMVectorSet(NewPosition.at(0), NewPosition.at(1), NewPosition.at(2), 0.0f);
 }
 
-void Camera::ResetPitch()
+void Camera::ResetPitch() noexcept
 {
 	m_Pitch = 0.0;
 }
 
-void Camera::ResetYaw()
+void Camera::ResetYaw() noexcept
 {
 	m_Yaw = 0.0f;
 }
 
-void Camera::ResetCamera()
+void Camera::ResetCamera() noexcept
 {
 	m_Position = m_DefaultPosition;
 	m_Target = m_DefaultTarget;
@@ -69,6 +69,7 @@ void Camera::ResetCamera()
 	m_Yaw = 0.0f;
 	m_Pitch = 0.0f;
 }
+
 /*
 void Camera::DrawGUI()
 {
@@ -91,8 +92,8 @@ void Camera::DrawGUI()
 	ImGui::End();
 }
 */
-void Camera::OnAspectRatioChange(float NewAspectRatio)
+
+void Camera::OnAspectRatioChange(float NewAspectRatio) noexcept
 {
-	//auto FoV{ 0.4f * XM_PI };
 	m_Projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), NewAspectRatio, m_zNear, m_zFar);
 }

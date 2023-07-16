@@ -1,7 +1,65 @@
 #include "ShaderTable.hpp"
 #include "../Utilities/Utilities.hpp"
+#include "../Graphics/Buffer/BufferUtils.hpp"
+#include <d3dx12.h>
 
 
+inline constexpr uint32_t ALIGN(uint32_t Size, uint32_t Alignment)
+{
+	return (Size + (Alignment + 1)) & ~(Alignment - 1);
+}
+
+TableRecord::TableRecord(void* pIdentifier, uint32_t Size) noexcept
+{
+	m_Identifier.pData = pIdentifier;
+	m_Identifier.Size = Size;
+}
+
+TableRecord::TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize) noexcept
+{
+	m_Identifier.pData = pIdentifier;
+	m_Identifier.Size = Size;
+	m_LocalRootArgs.pData = pLocalRootArgs;
+	m_LocalRootArgs.Size = ArgsSize;
+}
+
+void TableRecord::CopyTo(void* pDestination) noexcept
+{
+	uint8_t* pByteDestination{ static_cast<uint8_t*>(pDestination) };
+	//uint8_t* pByteDestination{ reinterpret_cast<uint8_t*>(pDestination) };
+	std::memcpy(pByteDestination, m_Identifier.pData, m_Identifier.Size);
+	if (m_LocalRootArgs.pData != nullptr)
+		std::memcpy(pByteDestination + m_Identifier.Size, m_LocalRootArgs.pData, m_LocalRootArgs.Size);
+}
+
+
+void ShaderTable::Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, std::wstring DebugName)
+{
+	m_ShaderRecordSize = ALIGN(ShaderRecordSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+	m_Records.reserve(NumShaderRecord);
+
+	const uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
+	const auto uploadHeap{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
+	BufferUtils::Create(pDevice, &m_Storage, bufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, uploadHeap);
+	m_MappedData = BufferUtils::MapCPU(m_Storage.Get());
+
+	if (!DebugName.empty())
+		SetTableName(DebugName);
+}
+
+void ShaderTable::AddRecord(TableRecord& Record)
+{
+	m_Records.push_back(Record);
+	Record.CopyTo(m_MappedData);
+	m_MappedData += m_ShaderRecordSize;
+}
+
+void ShaderTable::SetTableName(std::wstring Name)
+{
+	m_Storage.Get()->SetName(Name.c_str());
+}
+
+/*
 ShaderTableBuilder::ShaderTableBuilder()
 {
 }
@@ -33,7 +91,7 @@ void ShaderTableBuilder::Reset()
 	m_Miss		 = nullptr;
 	m_ClosestHit = nullptr;
 
-	
+
 }
 
 void ShaderTableBuilder::AddRayGenShader(std::wstring Entrypoint, std::vector<void*> pInputData)
@@ -54,7 +112,7 @@ void ShaderTableBuilder::AddHitGroup(std::wstring GroupName, std::vector<void*> 
 uint32_t ShaderTableBuilder::GetTableSize()
 {
 	m_IdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
-	
+
 	// Currently only one entry per shader so no need to multiply by vector sizes
 	m_RayGenSize	= GetShaderSize(*m_RayGen);
 	m_MissSize		= GetShaderSize(*m_Miss);
@@ -108,3 +166,7 @@ uint32_t ShaderTableBuilder::CopyShaderData(ID3D12StateObjectProperties* pRaytra
 
 	return ShaderSize;
 }
+
+*/
+
+
