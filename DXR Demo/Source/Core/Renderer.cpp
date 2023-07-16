@@ -1,9 +1,10 @@
+#include "../Rendering/Camera.hpp"
 #include "Renderer.hpp"
 #include "../Utilities/Utilities.hpp"
 
-Renderer::Renderer(Camera* pCamera)
+Renderer::Renderer(Camera* pCamera, Timer* pTimer)
 {
-	Initalize(pCamera);
+	Initalize(pCamera, pTimer);
 }
 
 Renderer::~Renderer()
@@ -11,13 +12,15 @@ Renderer::~Renderer()
 	Destroy();
 }
 
-void Renderer::Initalize(Camera* pCamera)
+void Renderer::Initalize(Camera* pCamera, Timer* pTimer)
 {
 	m_DeviceCtx = std::make_unique<DeviceContext>();
-	CreateDepthStencil();
+
 	CreatePipelines();
 
 	m_ShaderManager = std::make_shared<ShaderManager>();
+	m_Editor = std::make_unique<Editor>();
+	m_Editor->Initialize(m_DeviceCtx.get(), pCamera, pTimer);
 
 	LoadAssets();
 
@@ -40,6 +43,7 @@ void Renderer::LoadAssets()
 	m_Plane.Create(m_DeviceCtx.get());
 
 	// Triangle data
+	/*
 	float aspectRatio{ m_DeviceCtx->GetViewport().Width / m_DeviceCtx->GetViewport().Height };
 	std::vector<SimpleVertex> triangleVertices = {
 			{ { +0.0f,  +0.25f * aspectRatio, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
@@ -54,6 +58,7 @@ void Renderer::LoadAssets()
 	m_VertexBuffer.Create(m_DeviceCtx.get(), BufferData(triangleVertices.data(), triangleVertices.size(), sizeof(triangleVertices.at(0)) * triangleVertices.size(), sizeof(SimpleVertex)), BufferDesc());
 
 	m_IndexBuffer.Create(m_DeviceCtx.get(), BufferData(indices.data(), indices.size(), sizeof(uint32_t) * indices.size(), sizeof(uint32_t)), BufferDesc());
+	*/
 }
 
 void Renderer::OnRaytrace()
@@ -72,7 +77,7 @@ void Renderer::Render(Camera* pCamera)
 	ID3D12CommandList* commandLists[]{ m_DeviceCtx->GetCommandList() };
 	m_DeviceCtx->GetCommandQueue()->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-	HRESULT hResult{ m_DeviceCtx->GetSwapChain()->Present(1, 0) };
+	const HRESULT hResult{ m_DeviceCtx->GetSwapChain()->Present(1, 0) };
 	if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET)
 	{
 		throw std::logic_error("Device Removed!");
@@ -90,8 +95,6 @@ void Renderer::Destroy()
 {
 	m_DeviceCtx->WaitForGPU();
 
-	SAFE_RELEASE(m_DepthStencil);
-	SAFE_RELEASE(m_DepthHeap);
 	SAFE_RELEASE(m_PipelineState);
 	SAFE_RELEASE(m_RootSignature);
 
@@ -101,16 +104,14 @@ void Renderer::Destroy()
 void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 {
 	BeginFrame();
-	SetRenderTarget();
+	
 
+	SetHeaps(m_DeviceCtx->GetMainHeap()->GetHeapAddressOf());
 	// Spacebar to switch modes
 	if (bRaster)
 	{
-		std::array<ID3D12DescriptorHeap*, 1> ppHeaps{ m_DeviceCtx->GetMainHeap()->GetHeap() };
-		m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(static_cast<uint32_t>(ppHeaps.size()), ppHeaps.data());
 
-
-		ClearRenderTarget();
+		m_DeviceCtx->ClearRenderTarget();
 		m_DeviceCtx->GetCommandList()->SetPipelineState(m_PipelineState.Get());
 		m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 		m_Plane.Draw(pCamera->GetViewProjection());
@@ -129,33 +130,23 @@ void Renderer::BeginFrame()
 	ThrowIfFailed(m_DeviceCtx->GetCommandAllocator(m_DeviceCtx->FRAME_INDEX)->Reset());
 	ThrowIfFailed(m_DeviceCtx->GetCommandList()->Reset(m_DeviceCtx->GetCommandAllocator(m_DeviceCtx->FRAME_INDEX), nullptr));
 
-	auto viewport{ m_DeviceCtx->GetViewport() };
-	auto rect{ m_DeviceCtx->GetViewportRect() };
+	const auto viewport{ m_DeviceCtx->GetViewport() };
+	const auto rect{ m_DeviceCtx->GetViewportRect() };
 	m_DeviceCtx->GetCommandList()->RSSetViewports(1, &viewport);
 	m_DeviceCtx->GetCommandList()->RSSetScissorRects(1, &rect);
 
 	TransitToRender();
+	m_DeviceCtx->SetRenderTarget();
+
+	m_Editor->BeginFrame();
 }
 
 void Renderer::EndFrame()
 {
+	m_Editor->EndFrame();
+
 	TransitToPresent(D3D12_RESOURCE_STATE_RENDER_TARGET);
 	ThrowIfFailed(m_DeviceCtx->GetCommandList()->Close());
-}
-
-void Renderer::SetRenderTarget()
-{
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DeviceCtx->GetRenderTargetHeap()->GetCPUDescriptorHandleForHeapStart(), m_DeviceCtx->FRAME_INDEX, m_DeviceCtx->GetRenderTargetHeapDescriptorSize());
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
-	m_DeviceCtx->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthHandle);
-}
-
-void Renderer::ClearRenderTarget()
-{
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DeviceCtx->GetRenderTargetHeap()->GetCPUDescriptorHandleForHeapStart(), m_DeviceCtx->FRAME_INDEX, m_DeviceCtx->GetRenderTargetHeapDescriptorSize());
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
-	m_DeviceCtx->GetCommandList()->ClearRenderTargetView(rtvHandle, m_ClearColor.data(), 0, nullptr);
-	m_DeviceCtx->GetCommandList()->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
 void Renderer::TransitToRender()
@@ -181,40 +172,9 @@ void Renderer::TransitToPresent(D3D12_RESOURCE_STATES StateBefore)
 	}
 }
 
-void Renderer::CreateDepthStencil()
+void Renderer::SetHeaps(ID3D12DescriptorHeap** ppHeap)
 {
-	D3D12_DESCRIPTOR_HEAP_DESC dsHeap{};
-	dsHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	dsHeap.NumDescriptors = 1;
-	ThrowIfFailed(m_DeviceCtx->GetDevice()->CreateDescriptorHeap(&dsHeap, IID_PPV_ARGS(m_DepthHeap.GetAddressOf())));
-
-	D3D12_CLEAR_VALUE clearValue{};
-	clearValue.Format = DXGI_FORMAT_D32_FLOAT;
-	clearValue.DepthStencil.Depth = 1.0f;
-	clearValue.DepthStencil.Stencil = 0;
-
-	auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
-	auto heapDesc{ CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
-												static_cast<uint64_t>(m_DeviceCtx->GetViewport().Width),
-												static_cast<uint32_t>(m_DeviceCtx->GetViewport().Height),
-												1, 1) };
-	heapDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	ThrowIfFailed(m_DeviceCtx->GetDevice()->CreateCommittedResource(&heapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&heapDesc,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		&clearValue,
-		IID_PPV_ARGS(m_DepthStencil.GetAddressOf())));
-	m_DepthHeap.Get()->SetName(L"Depth Heap");
-
-	D3D12_DEPTH_STENCIL_VIEW_DESC dsView{};
-	dsView.Format = DXGI_FORMAT_D32_FLOAT;
-	dsView.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsView.Texture2D.MipSlice = 0;
-
-	m_DeviceCtx->GetDevice()->CreateDepthStencilView(m_DepthStencil.Get(), &dsView, m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
-	m_DepthStencil.Get()->SetName(L"Depth Stencil");
+	m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(1, ppHeap);
 }
 
 void Renderer::CreatePipelines()

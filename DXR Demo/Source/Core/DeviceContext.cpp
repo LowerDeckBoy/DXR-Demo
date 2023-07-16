@@ -1,5 +1,4 @@
 #include "DeviceContext.hpp"
-
 #include "Window.hpp"
 #include "../Utilities/Utilities.hpp"
 
@@ -14,7 +13,7 @@ DeviceContext::DeviceContext()
 
 DeviceContext::~DeviceContext()
 {
-    Destroy();
+    Release();
 }
 
 void DeviceContext::Create()
@@ -30,6 +29,7 @@ void DeviceContext::Create()
     CreateFence();
 
     CreateDescriptorHeaps();
+    CreateDepthStencil();
 }
 
 void DeviceContext::CreateDevice()
@@ -71,6 +71,15 @@ void DeviceContext::CreateDevice()
 
     ThrowIfFailed(adapter.As(&m_Adapter));
 
+    // getting GPU name
+    {
+        DXGI_ADAPTER_DESC1 desc1{};
+        m_Adapter.Get()->GetDesc1(&desc1);
+        std::wstring wname{ desc1.Description };
+        std::string name(wname.begin(), wname.end());
+        DeviceName = name;    
+    }
+
     ComPtr<ID3D12Device> device;
     ThrowIfFailed(D3D12CreateDevice(m_Adapter.Get(), m_FeatureLevel, IID_PPV_ARGS(device.ReleaseAndGetAddressOf())), "Failed to create ID3D12Device!\n");
 
@@ -80,11 +89,13 @@ void DeviceContext::CreateDevice()
 #if defined (_DEBUG) || (DEBUG)
     ComPtr<IDXGIDebug> dxgiDebug;
     ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
-
+    dxgiDebug->ReportLiveObjects(DXGI_DEBUG_DX, DXGI_DEBUG_RLO_SUMMARY);
 #endif
 
-    // Check for Raytracing here
+    // Check for Raytracing support
+    // Mendatory
     bRaytracingSupport = CheckRaytracingSupport(m_Adapter.Get());
+    assert(bRaytracingSupport);
 }
 
 void DeviceContext::CreateDescriptorHeaps()
@@ -97,6 +108,11 @@ void DeviceContext::CreateDescriptorHeaps()
     m_MainHeap = std::make_unique<DescriptorHeap>();
     ThrowIfFailed(m_Device.Get()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_MainHeap->GetHeapAddressOf())));
 
+    // D3D12MA
+    D3D12MA::ALLOCATOR_DESC allocatorDesc{};
+    allocatorDesc.pDevice = m_Device.Get();
+    allocatorDesc.pAdapter = m_Adapter.Get();
+    D3D12MA::CreateAllocator(&allocatorDesc, &m_Allocator);
 }
 
 void DeviceContext::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -179,10 +195,46 @@ void DeviceContext::CreateBackbuffers()
 void DeviceContext::CreateFence()
 {
     ThrowIfFailed(m_Device.Get()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.ReleaseAndGetAddressOf())), "Failed to create ID3D12Fence!\n");
-    m_FenceValues[FRAME_INDEX]++;
+    m_FenceValues.at(FRAME_INDEX)++;
 
     m_FenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
     assert(m_FenceEvent != nullptr);
+}
+
+void DeviceContext::CreateDepthStencil()
+{
+    D3D12_DESCRIPTOR_HEAP_DESC dsHeap{};
+    dsHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    dsHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    dsHeap.NumDescriptors = 1;
+    ThrowIfFailed(m_Device.Get()->CreateDescriptorHeap(&dsHeap, IID_PPV_ARGS(m_DepthHeap.GetAddressOf())));
+
+    D3D12_CLEAR_VALUE clearValue{};
+    clearValue.Format = DXGI_FORMAT_D32_FLOAT;
+    clearValue.DepthStencil.Depth = 1.0f;
+    clearValue.DepthStencil.Stencil = 0;
+
+    auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
+    auto heapDesc{ CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT,
+                                                static_cast<uint64_t>(m_Viewport.Width),
+                                                static_cast<uint32_t>(m_Viewport.Height),
+                                                1, 1) };
+    heapDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    ThrowIfFailed(m_Device.Get()->CreateCommittedResource(&heapProperties,
+        D3D12_HEAP_FLAG_NONE,
+        &heapDesc,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &clearValue,
+        IID_PPV_ARGS(m_DepthStencil.GetAddressOf())));
+    m_DepthHeap.Get()->SetName(L"Depth Heap");
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsView{};
+    dsView.Format = DXGI_FORMAT_D32_FLOAT;
+    dsView.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    dsView.Texture2D.MipSlice = 0;
+
+    m_Device.Get()->CreateDepthStencilView(m_DepthStencil.Get(), &dsView, m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
+    m_DepthStencil.Get()->SetName(L"Depth Stencil");
 }
 
 void DeviceContext::SetViewport()
@@ -210,11 +262,11 @@ bool DeviceContext::CheckRaytracingSupport(IDXGIAdapter1* pAdapter)
         if (SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &features, sizeof(features))))
         {
             if (features.RaytracingTier == D3D12_RAYTRACING_TIER_NOT_SUPPORTED)
-                return true;
+                return false;
         }
     }
 
-    return false;
+    return true;
 }
 
 void DeviceContext::ExecuteCommandLists()
@@ -234,7 +286,7 @@ void DeviceContext::FlushGPU()
         const uint64_t currentValue{ FRAME_INDEX };
 
         ThrowIfFailed(m_CommandQueue.Get()->Signal(m_Fence.Get(), currentValue));
-        m_FenceValues[i]++;
+        m_FenceValues.at(i)++;
 
         if (m_Fence.Get()->GetCompletedValue() < currentValue)
         {
@@ -249,48 +301,96 @@ void DeviceContext::FlushGPU()
 
 void DeviceContext::MoveToNextFrame()
 {
-    const UINT64 currentFenceValue = m_FenceValues[FRAME_INDEX];
+    const UINT64 currentFenceValue = m_FenceValues.at(FRAME_INDEX);
     ThrowIfFailed(GetCommandQueue()->Signal(GetFence(), currentFenceValue));
 
     // Update the frame index.
     FRAME_INDEX = m_SwapChain.Get()->GetCurrentBackBufferIndex();
 
     // If the next frame is not ready to be rendered yet, wait until it is ready.
-    if (m_Fence.Get()->GetCompletedValue() < m_FenceValues[FRAME_INDEX])
+    if (m_Fence.Get()->GetCompletedValue() < m_FenceValues.at(FRAME_INDEX))
     {
-        ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(m_FenceValues[FRAME_INDEX], m_FenceEvent));
+        ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(m_FenceValues.at(FRAME_INDEX), m_FenceEvent));
         WaitForSingleObjectEx(m_FenceEvent, INFINITE, FALSE);
     }
 
-    m_FenceValues[FRAME_INDEX] = currentFenceValue + 1;
+    m_FenceValues.at(FRAME_INDEX) = currentFenceValue + 1;
 }
 
 void DeviceContext::WaitForGPU()
 {
-    ThrowIfFailed(m_CommandQueue.Get()->Signal(m_Fence.Get(), m_FenceValues[FRAME_INDEX]));
+    ThrowIfFailed(m_CommandQueue.Get()->Signal(m_Fence.Get(), m_FenceValues.at(FRAME_INDEX)));
 
-    ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(m_FenceValues[FRAME_INDEX], m_FenceEvent));
+    ThrowIfFailed(m_Fence.Get()->SetEventOnCompletion(m_FenceValues.at(FRAME_INDEX), m_FenceEvent));
     ::WaitForSingleObjectEx(m_FenceEvent, INFINITE, FALSE);
 
-    m_FenceValues[FRAME_INDEX]++;
+    m_FenceValues.at(FRAME_INDEX)++;
 }
 
-void DeviceContext::Destroy()
+void DeviceContext::SetRenderTarget()
 {
+    const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RenderTargetHeap.Get()->GetCPUDescriptorHandleForHeapStart(), FRAME_INDEX, m_RenderTargetHeapDescriptorSize);
+    const CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
+    m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthHandle);
+
+}
+
+void DeviceContext::ClearRenderTarget()
+{
+    const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RenderTargetHeap.Get()->GetCPUDescriptorHandleForHeapStart(), FRAME_INDEX, m_RenderTargetHeapDescriptorSize);
+    const CD3DX12_CPU_DESCRIPTOR_HANDLE depthHandle(m_DepthHeap.Get()->GetCPUDescriptorHandleForHeapStart());
+    m_CommandList.Get()->ClearRenderTargetView(rtvHandle, m_ClearColor.data(), 0, nullptr);
+    m_CommandList.Get()->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+}
+
+void DeviceContext::Release()
+{
+    if (m_Allocator)
+    {
+        m_Allocator->Release();
+        m_Allocator = nullptr;
+    }
+
+    SAFE_RELEASE(m_DepthStencil);
+    SAFE_RELEASE(m_DepthHeap);
+    SAFE_RELEASE(m_RenderTargetHeap);
+
+    for (auto& target : m_RenderTargets)
+        SAFE_RELEASE(target);
+    for (auto& allocator : m_CommandAllocators)
+        SAFE_RELEASE(allocator);
+
+    SAFE_RELEASE(m_Fence);
+    SAFE_RELEASE(m_CommandQueue);
+    SAFE_RELEASE(m_CommandList);
+    SAFE_RELEASE(m_SwapChain);
+    SAFE_RELEASE(m_Device);
+    SAFE_RELEASE(m_Adapter);
+    SAFE_RELEASE(m_Factory);
 }
 
 ID3D12CommandAllocator* DeviceContext::GetCommandAllocator(uint32_t Index) const
 {
     if (Index >= 0 && Index < FRAME_COUNT)
-        return m_CommandAllocators[Index].Get();
+        return m_CommandAllocators.at(Index).Get();
 
     return nullptr;
+}
+
+ID3D12CommandAllocator* DeviceContext::GetCommandAllocator() const
+{
+    return m_CommandAllocators.at(FRAME_INDEX).Get();
+}
+
+ID3D12Resource* DeviceContext::GetRenderTarget() const
+{
+    return m_RenderTargets.at(FRAME_INDEX).Get();
 }
 
 ID3D12Resource* DeviceContext::GetRenderTarget(uint32_t Index) const
 {
     if (Index >= 0 && Index < FRAME_COUNT)
-        return m_RenderTargets[Index].Get();
+        return m_RenderTargets.at(Index).Get();
 
     return nullptr;
 }

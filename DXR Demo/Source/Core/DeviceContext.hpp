@@ -5,12 +5,15 @@
 #include <wrl.h>
 
 #include <d3dx12.h>
-//#include <D3D12MA/D3D12MemAlloc.h>
+#include <D3D12MA/D3D12MemAlloc.h>
 #include "DescriptorHeap.hpp"
 #include <string>
+#include <array>
 
+#include "DescriptorHeap.hpp"
 
 using Microsoft::WRL::ComPtr;
+
 class DeviceContext
 {
 public:
@@ -30,6 +33,8 @@ public:
 	void CreateBackbuffers();
 	void CreateFence();
 
+	void CreateDepthStencil();
+
 	void SetViewport();
 
 	bool CheckRaytracingSupport(IDXGIAdapter1* pAdapter);
@@ -40,9 +45,12 @@ public:
 	void MoveToNextFrame();
 	void WaitForGPU();
 
-	void Destroy();
+	void SetRenderTarget();
+	void ClearRenderTarget();
 
-	static const uint32_t FRAME_COUNT{ 2 };
+	void Release();
+
+	static const uint32_t FRAME_COUNT{ 3 };
 
 private:
 	ComPtr<IDXGIAdapter1> m_Adapter;
@@ -52,12 +60,12 @@ private:
 	ComPtr<ID3D12Debug> m_DebugDevice;
 
 	ComPtr<ID3D12GraphicsCommandList4> m_CommandList;
-	ComPtr<ID3D12CommandAllocator> m_CommandAllocators[FRAME_COUNT];
+	std::array<ComPtr<ID3D12CommandAllocator>, FRAME_COUNT> m_CommandAllocators;
 
 	ComPtr<ID3D12CommandQueue> m_CommandQueue;
 
 	ComPtr<IDXGISwapChain3> m_SwapChain;
-	ComPtr<ID3D12Resource> m_RenderTargets[FRAME_COUNT];
+	std::array<ComPtr<ID3D12Resource>, FRAME_COUNT> m_RenderTargets;
 	ComPtr<ID3D12DescriptorHeap> m_RenderTargetHeap;
 	uint32_t m_RenderTargetHeapDescriptorSize{ 0 };
 
@@ -70,6 +78,17 @@ private:
 
 	std::unique_ptr<DescriptorHeap> m_MainHeap;
 
+	// DepthStencil
+	inline ID3D12DescriptorHeap* GetDepthHeap() const noexcept { return m_DepthHeap.Get(); };
+	ComPtr<ID3D12Resource> m_DepthStencil;
+	ComPtr<ID3D12DescriptorHeap> m_DepthHeap;
+
+	// D3D12MA
+	D3D12MA::Allocator* m_Allocator;
+
+	//std::array<const float, 4> m_ClearColor{ 0.5f, 0.5f, 1.0f, 1.0f };
+	std::array<const float, 4> m_ClearColor{ 0.5f, 0.2f, 0.7f, 1.0f };
+
 	bool bRaytracingSupport{ false };
 
 public:
@@ -77,7 +96,7 @@ public:
 
 	inline static uint32_t FRAME_INDEX{ 0 }; 
 	HANDLE m_FenceEvent;
-	uint64_t m_FenceValues[FRAME_COUNT]{};
+	std::array<uint64_t, FRAME_COUNT> m_FenceValues{};
 
 	inline bool RaytraceSupported() const noexcept { return bRaytracingSupport; }
 
@@ -89,10 +108,12 @@ public:
 
 	ID3D12GraphicsCommandList4* GetCommandList() const noexcept { return m_CommandList.Get(); }
 	ID3D12CommandAllocator* GetCommandAllocator(uint32_t Index) const;
+	ID3D12CommandAllocator* GetCommandAllocator() const;
 	ID3D12CommandQueue* GetCommandQueue() const noexcept { return m_CommandQueue.Get(); }
 
 	IDXGISwapChain3* GetSwapChain() const noexcept { return m_SwapChain.Get(); }
 	ID3D12DescriptorHeap* GetRenderTargetHeap() const noexcept { return m_RenderTargetHeap.Get(); }
+	ID3D12Resource* GetRenderTarget() const;
 
 	DXGI_FORMAT GetRenderTargetFormat() const noexcept { return m_RenderTargetFormat; }
 
@@ -108,5 +129,8 @@ public:
 	uint32_t GetRenderTargetHeapDescriptorSize() const noexcept { return m_RenderTargetHeapDescriptorSize; }
 
 	DescriptorHeap* GetMainHeap() noexcept { return m_MainHeap.get(); }
+	D3D12MA::Allocator* GetAllocator() { return m_Allocator; }
+
+	std::string DeviceName;
 
 };

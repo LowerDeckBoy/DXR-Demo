@@ -1,27 +1,28 @@
 #pragma once
 #include <memory>
-#include <array>
+//#include <array>
 #include <vector>
 
 #include "DeviceContext.hpp"
 #include "../Graphics/Buffer/Buffer.hpp"
 #include "../Graphics/Shader.hpp"
 #include "PipelineStateObject.hpp"
-
-#include "../Rendering/Camera.hpp"
-
 #include "../Graphics/Cube.hpp"
 #include "../Graphics/Plane.hpp"
 #include "../Raytracing/RaytracingContext.hpp"
 
+#include "../Editor/Editor.hpp"
+
+class Camera;
+class Timer;
 
 class Renderer
 {
 public:
-	Renderer(Camera* pCamera);
+	Renderer(Camera* pCamera, Timer* pTimer);
 	~Renderer();
 
-	void Initalize(Camera* pCamera);
+	void Initalize(Camera* pCamera, Timer* pTimer);
 	void LoadAssets();
 
 	void OnRaytrace();
@@ -39,22 +40,14 @@ private:
 	void BeginFrame();
 	void EndFrame();
 
-	void SetRenderTarget();
-	void ClearRenderTarget();
-
 	void TransitToRender();
 	void TransitToPresent(D3D12_RESOURCE_STATES StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	void CreateDepthStencil();
-	void CreatePipelines();
-	
-	std::array<const float, 4> m_ClearColor{ 0.5f, 0.5f, 1.0f, 1.0f };
-	//std::array<const float, 4> m_ClearColor{ 0.5f, 0.2f, 0.7f, 1.0f };
+	void SetHeaps(ID3D12DescriptorHeap** ppHeap);
 
-	// DepthStencil
-	inline ID3D12DescriptorHeap* GetDepthHeap() const { return m_DepthHeap.Get(); };
-	ComPtr<ID3D12Resource> m_DepthStencil;
-	ComPtr<ID3D12DescriptorHeap> m_DepthHeap;
+	void CreatePipelines();
+
+	std::unique_ptr<Editor> m_Editor;
 
 	//
 	ComPtr<ID3D12RootSignature> m_RootSignature;
@@ -66,8 +59,8 @@ private:
 	Shader m_PixelShader;
 
 	// Triangle data
-	VertexBuffer m_VertexBuffer;
-	IndexBuffer m_IndexBuffer;
+	//VertexBuffer m_VertexBuffer;
+	//IndexBuffer m_IndexBuffer;
 
 	Cube m_Cube;
 	Plane m_Plane;
