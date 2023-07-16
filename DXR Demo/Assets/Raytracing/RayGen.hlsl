@@ -3,7 +3,7 @@
 
 #include "Common.hlsl"
 
-RWTexture2D<float4> RaytraceScene : register(u0);
+RWTexture2D<float4> RaytraceScene : register(u0, space0);
 RaytracingAccelerationStructure SceneTopLevel : register(t0, space0);
 
 [shader("raygeneration")]
@@ -26,7 +26,7 @@ void RayGen()
     world.xyz /= world.w;
     float3 origin = SceneData.CameraPosition.xyz;
     float3 direction = normalize(world.xyz - origin);
-   
+ 
     RayDesc ray;
     ray.Origin = origin;
     ray.Direction = direction;

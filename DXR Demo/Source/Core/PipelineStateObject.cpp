@@ -35,8 +35,8 @@ D3D12_STATIC_SAMPLER_DESC PipelineStateObject::CreateStaticSampler(uint32_t Shad
     desc.ComparisonFunc = ComparsionFunc;
     desc.Filter = Filter;
     desc.MaxAnisotropy = 0;
-    desc.MinLOD = 0;
-    desc.MaxLOD = UINT32_MAX;
+    desc.MinLOD = 0.0f;
+    desc.MaxLOD = static_cast<float>(UINT32_MAX);
     desc.ShaderRegister = ShaderRegister;
     desc.RegisterSpace = RegisterSpace;
     desc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
@@ -53,8 +53,8 @@ D3D12_SAMPLER_DESC PipelineStateObject::CreateSampler(D3D12_FILTER Filter, D3D12
     desc.ComparisonFunc = ComparsionFunc;
     desc.Filter = Filter;
     desc.MaxAnisotropy = 0;
-    desc.MinLOD = 0;
-    desc.MaxLOD = UINT32_MAX;
+    desc.MinLOD = static_cast<float>(0);
+    desc.MaxLOD = static_cast<float>(UINT32_MAX);
 
     return desc;
 }

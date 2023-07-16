@@ -37,8 +37,8 @@ void ClosestHit(inout HitInfo payload, BuiltInTriangleIntersectionAttributes att
     
     float3 triangleNormal = HitAttribute(vertices, attrib);
     
-    //float3 pixelToLight = normalize(SceneData.LightPosition.xyz - WorldPosition());
-    float3 pixelToLight = normalize(SceneData.CameraPosition.xyz - WorldPosition());
+    float3 pixelToLight = normalize(SceneData.LightPosition.xyz - WorldPosition());
+    //float3 pixelToLight = normalize(SceneData.CameraPosition.xyz - WorldPosition());
     float NdotL = max(0.0f, dot(pixelToLight, triangleNormal));
     float4 color = Albedo * SceneData.LightDiffuse * NdotL;
     payload.Color = SceneData.LightAmbient + color;
