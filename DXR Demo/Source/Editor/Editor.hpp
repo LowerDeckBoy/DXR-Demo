@@ -18,6 +18,8 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
+	void OnResize();
+
 
 private:
 	// Seperate Heap for GUI usage

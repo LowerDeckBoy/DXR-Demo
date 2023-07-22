@@ -9,28 +9,29 @@ void Buffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
 
 	const auto heapDesc{ CD3DX12_RESOURCE_DESC::Buffer(Data.Size) };
 
-	D3D12MA::Allocation* allocationDefault{ nullptr };
+	D3D12MA::Allocation* allocation{ nullptr };
 	D3D12MA::ALLOCATION_DESC allocDesc{};
 	allocDesc.Flags = D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_COMMITTED | D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
-	allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
-	pDevice->GetAllocator()->CreateResource(&allocDesc, &heapDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, &allocationDefault, IID_PPV_ARGS(m_Buffer.ReleaseAndGetAddressOf()));
-
-	allocDesc.Flags = D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_COMMITTED | D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
 	allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-	D3D12MA::Allocation* allocationUpload{ nullptr };
-	ID3D12Resource* uploadBuffer{ nullptr };
-	pDevice->GetAllocator()->CreateResource(&allocDesc, &heapDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &allocationUpload, IID_PPV_ARGS(&uploadBuffer));
+	//allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+	pDevice->GetAllocator()->CreateResource(&allocDesc, &heapDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, &allocation, IID_PPV_ARGS(m_Buffer.ReleaseAndGetAddressOf()));
 
-	D3D12_SUBRESOURCE_DATA subresource{};
-	subresource.pData = Data.pData;
-	subresource.RowPitch = Data.Size;
-	subresource.SlicePitch = Data.Size;
-	UpdateSubresources(pDevice->GetCommandList(), m_Buffer.Get(), uploadBuffer, 0, 0, 1, &subresource);
+	//allocDesc.Flags = D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_COMMITTED | D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
+	//allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+	//D3D12MA::Allocation* allocationUpload{ nullptr };
+	//ID3D12Resource* uploadBuffer{ nullptr };
+	//pDevice->GetAllocator()->CreateResource(&allocDesc, &heapDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &allocationUpload, IID_PPV_ARGS(&uploadBuffer));
 
-	auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(m_Buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON) };
-	pDevice->GetCommandList()->ResourceBarrier(1, &barrier);
+	//D3D12_SUBRESOURCE_DATA subresource{};
+	//subresource.pData = Data.pData;
+	//subresource.RowPitch = Data.Size;
+	//subresource.SlicePitch = Data.Size;
+	//UpdateSubresources(pDevice->GetCommandList(), m_Buffer.Get(), uploadBuffer, 0, 0, 1, &subresource);
 
-	//MapMemory();
+	//auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(m_Buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON) };
+	//pDevice->GetCommandList()->ResourceBarrier(1, &barrier);
+
+	MapMemory();
 
 	pDevice->GetMainHeap()->Allocate(m_Descriptor);
 
@@ -45,17 +46,17 @@ void Buffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
 	pDevice->GetDevice()->CreateShaderResourceView(m_Buffer.Get(), &srvDesc, m_Descriptor.GetCPU());
 
 	//allocation->Release();
-	allocationUpload->Release();
-	allocationDefault->Release();
-	uploadBuffer = nullptr;
+	//allocationUpload->Release();
+	allocation->Release();
+	//uploadBuffer = nullptr;
 }
-/*
+
 void Buffer::MapMemory()
 {
-	uint8_t* pDataBegin{};
+	uint8_t* pDataBegin{ nullptr };
 	const CD3DX12_RANGE readRange(0, 0);
 	ThrowIfFailed(m_Buffer.Get()->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin)));
 	std::memcpy(pDataBegin, m_BufferData.pData, m_BufferData.Size);
 	m_Buffer.Get()->Unmap(0, nullptr);
 }
-*/
+

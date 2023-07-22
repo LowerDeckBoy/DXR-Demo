@@ -33,7 +33,7 @@ class Buffer
 public:
 	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
 	
-	//void MapMemory();
+	void MapMemory();
 	
 	inline ID3D12Resource* GetBuffer() const noexcept { return m_Buffer.Get(); }
 

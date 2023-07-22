@@ -16,6 +16,8 @@ public:
 	void Create(ID3D12GraphicsCommandList4* pCommandList, ID3D12Resource* pScratch, ID3D12Resource* pResult, bool bAllowUpdate = false);
 	// TODO: Change buffer into Mesh reference for models
 	void AddBuffers(VertexBuffer Vertex, IndexBuffer Index, bool bOpaque);
+	// TEST
+	void AddBuffers(std::vector<VertexBuffer> Vertices, std::vector<IndexBuffer> Indices, bool bOpaque);
 
 	void GetBufferSizes(ID3D12Device5* pDevice, uint64_t* pScratchSize, uint64_t* pResultSize, bool bAllowUpdate);
 

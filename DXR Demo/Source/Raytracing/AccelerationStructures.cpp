@@ -55,6 +55,29 @@ void BottomLevel::AddBuffers(VertexBuffer Vertex, IndexBuffer Index, bool bOpaqu
 	m_Buffers.emplace_back(desc);
 }
 
+void BottomLevel::AddBuffers(std::vector<VertexBuffer> Vertices, std::vector<IndexBuffer> Indices, bool bOpaque)
+{
+	for (size_t i = 0; i < Vertices.size(); i++)
+	{
+		D3D12_RAYTRACING_GEOMETRY_DESC desc{};
+		desc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+		desc.Flags = (bOpaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE);
+
+		desc.Triangles.VertexBuffer.StartAddress = Vertices.at(i).View.BufferLocation;
+		desc.Triangles.VertexBuffer.StrideInBytes = Vertices.at(i).View.StrideInBytes;
+		desc.Triangles.VertexCount = Vertices.at(i).Buffer.GetData().ElementsCount;
+		desc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+
+		desc.Triangles.IndexBuffer = Indices.at(i).View.BufferLocation;
+		desc.Triangles.IndexCount = Indices.at(i).Count;
+		desc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
+
+		desc.Triangles.Transform3x4 = 0;
+
+		m_Buffers.emplace_back(desc);
+	}
+}
+
 void BottomLevel::GetBufferSizes(ID3D12Device5* pDevice, uint64_t* pScratchSize, uint64_t* pResultSize, bool bAllowUpdate)
 {
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS prebuildDesc{};
