@@ -151,7 +151,6 @@
     <ClInclude Include="3rd-party\imgui\imstb_rectpack.h" />
     <ClInclude Include="3rd-party\imgui\imstb_textedit.h" />
     <ClInclude Include="3rd-party\imgui\imstb_truetype.h" />
-    <ClInclude Include="Source\pch.h" />
     <ClInclude Include="Source\Editor\Editor.hpp" />
     <ClInclude Include="Source\Graphics\Buffer\BufferUtils.hpp" />
     <ClInclude Include="Source\Graphics\Buffer\ConstTypes.hpp" />
@@ -185,7 +184,6 @@
     <ClCompile Include="3rd-party\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="3rd-party\imgui\imgui_tables.cpp" />
     <ClCompile Include="3rd-party\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="Source\pch.cpp" />
     <ClCompile Include="Source\Editor\Editor.cpp" />
     <ClCompile Include="Source\Graphics\Buffer\Buffer.cpp" />
     <ClCompile Include="Source\Graphics\Buffer\BufferUtils.cpp" />
