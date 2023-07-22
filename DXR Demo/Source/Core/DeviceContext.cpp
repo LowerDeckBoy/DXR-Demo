@@ -22,14 +22,14 @@ void DeviceContext::Create()
     CreateCommandQueue();
     CreateCommandAllocators();
     CreateCommandList();
+    CreateFence();
 
     CreateSwapChain();
     CreateBackbuffers();
 
-    CreateFence();
 
     CreateDescriptorHeaps();
-    CreateDepthStencil();
+    //CreateDepthStencil();
 }
 
 void DeviceContext::CreateDevice()
@@ -71,7 +71,7 @@ void DeviceContext::CreateDevice()
 
     ThrowIfFailed(adapter.As(&m_Adapter));
 
-    // getting GPU name
+    // Getting GPU name
     {
         DXGI_ADAPTER_DESC1 desc1{};
         m_Adapter.Get()->GetDesc1(&desc1);
@@ -112,7 +112,7 @@ void DeviceContext::CreateDescriptorHeaps()
     D3D12MA::ALLOCATOR_DESC allocatorDesc{};
     allocatorDesc.pDevice = m_Device.Get();
     allocatorDesc.pAdapter = m_Adapter.Get();
-    D3D12MA::CreateAllocator(&allocatorDesc, &m_Allocator);
+    D3D12MA::CreateAllocator(&allocatorDesc, m_Allocator.ReleaseAndGetAddressOf());
 }
 
 void DeviceContext::CreateCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -185,7 +185,7 @@ void DeviceContext::CreateBackbuffers()
 
     for (uint32_t i = 0; i < FRAME_COUNT; i++)
     {
-        ThrowIfFailed(m_SwapChain.Get()->GetBuffer(i, IID_PPV_ARGS(&m_RenderTargets[i])));
+        ThrowIfFailed(m_SwapChain.Get()->GetBuffer(i, IID_PPV_ARGS(m_RenderTargets.at(i).GetAddressOf())));
         m_Device.Get()->CreateRenderTargetView(m_RenderTargets[i].Get(), nullptr, rtvHandle);
 
         rtvHandle.Offset(1, m_RenderTargetHeapDescriptorSize);
@@ -343,14 +343,49 @@ void DeviceContext::ClearRenderTarget()
     m_CommandList.Get()->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
-void DeviceContext::Release()
+void DeviceContext::ReleaseRenderTargets()
 {
-    if (m_Allocator)
+    for (auto& target : m_RenderTargets)
     {
-        m_Allocator->Release();
-        m_Allocator = nullptr;
+        target->Release();
+    }
+}
+
+void DeviceContext::OnResize()
+{
+    if (!m_Device.Get() || !m_SwapChain.Get() || !GetCommandAllocator())
+        throw std::exception();
+
+    GetCommandAllocator()->Reset();
+    GetCommandList()->Reset(GetCommandAllocator(), nullptr);
+
+    ReleaseRenderTargets();
+
+    if (m_DepthStencil.Get())
+        m_DepthStencil->Release();
+
+    const HRESULT hResult{ m_SwapChain.Get()->ResizeBuffers(DeviceContext::FRAME_COUNT,
+                                                static_cast<uint32_t>(Window::Resolution().Width),
+                                                static_cast<uint32_t>(Window::Resolution().Height),
+                                                DXGI_FORMAT_R8G8B8A8_UNORM, 0) };
+
+    if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET)
+    {
+        ::OutputDebugStringA("Device removed!\n");
+        throw std::exception();
     }
 
+    FRAME_INDEX = 0;
+
+    SetViewport();
+    CreateBackbuffers();
+    CreateDepthStencil();
+
+    ExecuteCommandLists();
+}
+
+void DeviceContext::Release()
+{
     SAFE_RELEASE(m_DepthStencil);
     SAFE_RELEASE(m_DepthHeap);
     SAFE_RELEASE(m_RenderTargetHeap);
@@ -359,6 +394,8 @@ void DeviceContext::Release()
         SAFE_RELEASE(target);
     for (auto& allocator : m_CommandAllocators)
         SAFE_RELEASE(allocator);
+
+    SAFE_RELEASE(m_Allocator);
 
     SAFE_RELEASE(m_Fence);
     SAFE_RELEASE(m_CommandQueue);

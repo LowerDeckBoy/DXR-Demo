@@ -48,6 +48,9 @@ public:
 	void SetRenderTarget();
 	void ClearRenderTarget();
 
+	void ReleaseRenderTargets();
+	void OnResize();
+
 	void Release();
 
 	static const uint32_t FRAME_COUNT{ 3 };
@@ -84,7 +87,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_DepthHeap;
 
 	// D3D12MA
-	D3D12MA::Allocator* m_Allocator;
+	ComPtr<D3D12MA::Allocator> m_Allocator;
 
 	//std::array<const float, 4> m_ClearColor{ 0.5f, 0.5f, 1.0f, 1.0f };
 	std::array<const float, 4> m_ClearColor{ 0.5f, 0.2f, 0.7f, 1.0f };
@@ -129,7 +132,7 @@ public:
 	uint32_t GetRenderTargetHeapDescriptorSize() const noexcept { return m_RenderTargetHeapDescriptorSize; }
 
 	DescriptorHeap* GetMainHeap() noexcept { return m_MainHeap.get(); }
-	D3D12MA::Allocator* GetAllocator() { return m_Allocator; }
+	D3D12MA::Allocator* GetAllocator() { return m_Allocator.Get(); }
 
 	std::string DeviceName;
 
