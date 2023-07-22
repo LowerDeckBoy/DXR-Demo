@@ -50,19 +50,20 @@ void Window::Initialize()
 
 	m_Rect = { 0, 0, static_cast<LONG>(m_Resolution.Width), static_cast<LONG>(m_Resolution.Height) };
 	::AdjustWindowRect(&m_Rect, WS_OVERLAPPEDWINDOW, false);
-	int32_t width = static_cast<int32_t>(m_Rect.right - m_Rect.left);
-	int32_t height = static_cast<int32_t>(m_Rect.bottom - m_Rect.top);
+	const int32_t width = static_cast<int32_t>(m_Rect.right - m_Rect.left);
+	const int32_t height = static_cast<int32_t>(m_Rect.bottom - m_Rect.top);
 
 	m_hWnd = ::CreateWindow(m_WindowClass, m_WindowName, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, m_hInstance, 0);
 
 	if (!m_hWnd)
 		throw std::exception("Failed to Create Window!\n");
 
-	int xPos = (::GetSystemMetrics(SM_CXSCREEN) - m_Rect.right) / 2;
-	int yPos = (::GetSystemMetrics(SM_CYSCREEN) - m_Rect.bottom) / 2;
+	const int32_t xPos = (::GetSystemMetrics(SM_CXSCREEN) - m_Rect.right) / 2;
+	const int32_t yPos = (::GetSystemMetrics(SM_CYSCREEN) - m_Rect.bottom) / 2;
+	// 
 	::SetWindowPos(m_hWnd, 0, xPos, yPos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 
-	BOOL bDarkMode = TRUE;
+	const BOOL bDarkMode{ TRUE };
 	::DwmSetWindowAttribute(m_hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &bDarkMode, sizeof(bDarkMode));
 
 	bInitialized = true;
@@ -73,9 +74,10 @@ void Window::Show()
 	if (!m_hWnd)
 		throw std::exception("Failed to get Window HWND!\n");
 
-	::ShowWindow(m_hWnd, SW_SHOW);
+	//::SendMessageA(m_hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
 	::SetForegroundWindow(m_hWnd);
 	::SetFocus(m_hWnd);
+	::ShowWindow(m_hWnd, SW_SHOW);
 	::UpdateWindow(m_hWnd);
 }
 

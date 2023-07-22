@@ -38,7 +38,7 @@ private:
 
 	bool bInitialized{ false };
 
-protected:
+public:
 	static struct DisplayResolution
 	{
 		DisplayResolution() { }
@@ -63,7 +63,7 @@ public:
 	[[nodiscard]] inline static HINSTANCE GetHInstance() { return m_hInstance; }
 	[[nodiscard]] inline static HWND GetHWND() { return m_hWnd; }
 
-	static DisplayResolution Resolution() { return m_Resolution; }
+	static inline DisplayResolution Resolution() { return m_Resolution; }
 
 	static void ShowCursor();
 	static void HideCursor();
