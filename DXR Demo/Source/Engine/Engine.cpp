@@ -71,6 +71,8 @@ void Engine::Destroy()
 
 void Engine::OnResize()
 {
+	m_Renderer->OnResize();
+	m_Camera->OnAspectRatioChange(Window::Resolution().AspectRatio);
 }
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
@@ -131,10 +133,7 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 			{
 				//OnResize();
 			}
-			//else if (bIsResizing)
-			//{
-			//	//OnResize();
-			//}
+
 			OnResize();
 			return 0;
 		}
@@ -145,22 +144,21 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		bIsResizing = true;
 		m_Timer->Stop();
 
-		return 0;
+		break;
 	}
 
 	case WM_EXITSIZEMOVE:
 	{
 		bAppPaused = false;
 		bIsResizing = false;
-		m_Timer->Start();
 
 		OnResize();
+		m_Timer->Start();
 
-		return 0;
+		break;
 	}
 	case WM_KEYDOWN:
 	{
-		
 		if (GetKeyState(VK_SPACE) & 0x800)
 		{
 			m_Renderer->bRaster = !m_Renderer->bRaster;

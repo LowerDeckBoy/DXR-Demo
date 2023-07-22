@@ -86,9 +86,14 @@ void Renderer::Render(Camera* pCamera)
 	m_DeviceCtx->MoveToNextFrame();
 }
 
-void Renderer::Resize()
+void Renderer::OnResize()
 {
 	// TODO:
+	m_DeviceCtx->WaitForGPU();
+	m_DeviceCtx->FlushGPU();
+	m_DeviceCtx->OnResize();
+	m_RaytracingContext->CreateOutputResource();
+	m_DeviceCtx->WaitForGPU();
 }
 
 void Renderer::Destroy()

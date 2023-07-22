@@ -32,13 +32,13 @@ void Editor::Initialize(DeviceContext* pDeviceCtx, Camera* pCamera, Timer* pTime
 	ImGui::CreateContext();
 
 	ImGuiIO& IO{ ImGui::GetIO() };
+	IO.FontGlobalScale = 1.0f;
+	IO.ConfigFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+
 	ImGuiStyle& Style{ ImGui::GetStyle() };
 	ImGui::StyleColorsDark();
 	Style.WindowRounding = 5.0f;
 	Style.WindowBorderSize = 0.0f;
-
-	constexpr float fontSize{ 16.0f };
-	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Font/Roboto-Medium.ttf", fontSize);
 
 	ImGui_ImplWin32_Init(Window::GetHWND());
 	ImGui_ImplDX12_Init(m_DeviceCtx->GetDevice(),
@@ -47,6 +47,9 @@ void Editor::Initialize(DeviceContext* pDeviceCtx, Camera* pCamera, Timer* pTime
 		m_Heap.Get(),
 		m_Heap.Get()->GetCPUDescriptorHandleForHeapStart(),
 		m_Heap.Get()->GetGPUDescriptorHandleForHeapStart());
+
+	constexpr float fontSize{ 14.0f };
+	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Font/Roboto-Medium.ttf", fontSize);
 
 }
 
@@ -65,8 +68,8 @@ void Editor::EndFrame()
 	{
 		ImGui::BeginMainMenuBar();
 
-		ImGui::Text("GPU: %s  | ", m_DeviceCtx->DeviceName.data());
-		ImGui::Text("FPS: %d ms: %.2f  | ", m_Timer->m_FPS, m_Timer->m_Miliseconds);
+		ImGui::Text("GPU: %s | ", m_DeviceCtx->DeviceName.data());
+		ImGui::Text("FPS: %d ms: %.2f | ", m_Timer->m_FPS, m_Timer->m_Miliseconds);
 		MemoryUsage::ReadRAM();
 		ImGui::Text("Memory: %.2f MB", MemoryUsage::MemoryInUse);
 
@@ -74,11 +77,16 @@ void Editor::EndFrame()
 	}
 
 	ImGui::PopFont();
-	ImGui::Render();
 	ImGui::EndFrame();
+	ImGui::Render();
 
 	m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(1, m_Heap.GetAddressOf());
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_DeviceCtx->GetCommandList());
+}
+
+void Editor::OnResize()
+{
+	//IO.DisplaySize = ImVec2(Window::Resolution().Width, Window::Resolution().Height);
 }
 
 void Editor::CreateHeap()

@@ -28,7 +28,7 @@ public:
 	void OnRaytrace();
 	void Update(Camera* pCamera);
 	void Render(Camera* pCamera);
-	void Resize();
+	void OnResize();
 	void Destroy();
 	
 	bool bRaster{ true };

@@ -331,7 +331,7 @@ void RaytracingContext::CreateOutputResource()
 		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) };
 
 	auto defaultHeapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
-	ThrowIfFailed(device->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &uavDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(m_RaytracingOutput.GetAddressOf())));
+	ThrowIfFailed(device->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &uavDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(m_RaytracingOutput.ReleaseAndGetAddressOf())));
 	m_RaytracingOutput.Get()->SetName(L"Raytracing Output");
 
 	m_DeviceCtx->GetMainHeap()->Allocate(m_OutputUAV);

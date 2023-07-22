@@ -67,6 +67,8 @@ public:
 
 	void OutputToBackbuffer();
 
+	//void OnResize();
+
 	[[maybe_unused]]
 	void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) const;
 
