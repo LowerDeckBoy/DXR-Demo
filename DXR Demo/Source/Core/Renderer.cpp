@@ -25,8 +25,10 @@ void Renderer::Initalize(Camera* pCamera, Timer* pTimer)
 	LoadAssets();
 
 	// Pass current object geometry data
-	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_VertexBuffer, m_IndexBuffer);
-	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
+	std::vector<VertexBuffer> vertex{ m_Cube.m_VertexBuffer, m_Plane.m_VertexBuffer };
+	std::vector<IndexBuffer> index{ m_Cube.m_IndexBuffer, m_Plane.m_IndexBuffer };
+	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
+	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index);
 	//std::vector<VertexBuffer> vertices{ m_Cube.m_VertexBuffer, m_Plane.m_VertexBuffer };
 	//std::vector<IndexBuffer> indices{ m_Cube.m_IndexBuffer, m_Plane.m_IndexBuffer };
 
@@ -88,12 +90,11 @@ void Renderer::Render(Camera* pCamera)
 
 void Renderer::OnResize()
 {
-	// TODO:
-	m_DeviceCtx->WaitForGPU();
-	m_DeviceCtx->FlushGPU();
 	m_DeviceCtx->OnResize();
-	m_RaytracingContext->CreateOutputResource();
+	m_RaytracingContext->OnResize();
+
 	m_DeviceCtx->WaitForGPU();
+	m_DeviceCtx->ExecuteCommandLists();
 }
 
 void Renderer::Destroy()

@@ -58,10 +58,6 @@ private:
 	Shader m_VertexShader;
 	Shader m_PixelShader;
 
-	// Triangle data
-	//VertexBuffer m_VertexBuffer;
-	//IndexBuffer m_IndexBuffer;
-
 	Cube m_Cube;
 	Plane m_Plane;
 
