@@ -10,52 +10,63 @@ const wchar_t* RaytracingContext::m_RayGenShaderName		= L"RayGen";
 const wchar_t* RaytracingContext::m_MissShaderName			= L"Miss";
 const wchar_t* RaytracingContext::m_ClosestHitShaderName	= L"ClosestHit";
 
-RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index)
+/*
+RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index) 
+	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffer(Vertex), m_IndexBuffer(Index), m_VertexBuffers()
 {
 	{
-		m_DeviceCtx = pDeviceCtx;
-		assert(m_DeviceCtx);
-		m_Camera = pCamera;
+		//m_DeviceCtx = pDeviceCtx;
+		//assert(m_DeviceCtx);
+		//m_ShaderManager = pShaderManager;
+		//m_Camera = pCamera;
 
-		m_VertexBuffer = Vertex;
-		m_IndexBuffer = Index;
+		//m_VertexBuffer = Vertex;
+		//m_IndexBuffer = Index;
 	}
-
+	m_VertexBuffers = {};
+	m_IndexBuffers = {};
 	Create();
 }
-
-RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index)
-{
-	{
-		m_DeviceCtx = pDeviceCtx;
-		assert(m_DeviceCtx);
-		m_ShaderManager = pShaderManager;
-		m_Camera = pCamera;
-
-		m_VertexBuffer = Vertex;
-		m_IndexBuffer = Index;
-	}
-
-	Create();
-}
+*/
 
 RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index)
+	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffers(Vertex), m_IndexBuffers(Index)
+{
+
+	Create();
+}
+/*
+RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index)
+	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffers(Vertex), m_IndexBuffers(Index)
 {
 	{
-		assert(m_DeviceCtx = pDeviceCtx);
-		assert(m_ShaderManager = pShaderManager);
-		assert(m_Camera = pCamera);
-
-		m_VertexBuffers = Vertex;
-		m_IndexBuffers  = Index;
+		//assert(m_DeviceCtx = pDeviceCtx);
+		//assert(m_ShaderManager = pShaderManager);
+		//assert(m_Camera = pCamera);
+		//
+		//m_VertexBuffers = Vertex;
+		//m_IndexBuffers  = Index;
 	}
 
 	Create();
 
 }
-
+*/
 RaytracingContext::~RaytracingContext() noexcept(false)
 {
+	//m_VertexBuffer.Buffer.Release();
+	//m_IndexBuffer.Buffer.Release();
+
+	//for (auto& vertex : m_VertexBuffers)
+	//{
+	//	vertex.Buffer.Release();
+	//}
+	//
+	//for (auto& index : m_IndexBuffers)
+	//{
+	//	index.Buffer.Release();
+	//}
+
 	SAFE_RELEASE(m_GlobalRootSignature);
 	SAFE_RELEASE(m_HitRootSignature);
 	SAFE_RELEASE(m_RayGenShader);
@@ -143,8 +154,8 @@ void RaytracingContext::DispatchRaytrace()
 	commandList->SetComputeRootConstantBufferView(2, m_CameraBuffer.GetBuffer(m_DeviceCtx->FRAME_INDEX)->GetGPUVirtualAddress());
 	commandList->SetComputeRootConstantBufferView(3, m_SceneBuffer.GetBuffer(m_DeviceCtx->FRAME_INDEX)->GetGPUVirtualAddress());
 	// Geometry Buffers
-	commandList->SetComputeRootDescriptorTable(4, m_VertexBuffer.Buffer.m_Descriptor.GetGPU());
-	commandList->SetComputeRootDescriptorTable(5, m_IndexBuffer.Buffer.m_Descriptor.GetGPU());
+	//commandList->SetComputeRootDescriptorTable(4, m_VertexBuffer.Buffer.m_Descriptor.GetGPU());
+	//commandList->SetComputeRootDescriptorTable(5, m_IndexBuffer.Buffer.m_Descriptor.GetGPU());
 
 	D3D12_DISPATCH_RAYS_DESC dispatchDesc{};
 	// RayGen
@@ -321,9 +332,9 @@ void RaytracingContext::CreateStateObject()
 
 void RaytracingContext::CreateOutputResource()
 {
-	auto device{ m_DeviceCtx->GetDevice() };
+	const auto device{ m_DeviceCtx->GetDevice() };
 
-	auto uavDesc{ CD3DX12_RESOURCE_DESC::Tex2D(
+	const auto uavDesc{ CD3DX12_RESOURCE_DESC::Tex2D(
 		DXGI_FORMAT_R8G8B8A8_UNORM, 
 		static_cast<uint64_t>(m_DeviceCtx->GetViewport().Width), 
 		static_cast<uint32_t>(m_DeviceCtx->GetViewport().Height), 
@@ -346,7 +357,6 @@ void RaytracingContext::CreateOutputResource()
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.RaytracingAccelerationStructure.Location = m_AS.m_TopLevel.m_ResultBuffer->GetGPUVirtualAddress();
 	device->CreateShaderResourceView(nullptr, &srvDesc, m_TopLevelView.GetCPU());
-
 }
 
 void RaytracingContext::BuildAccelerationStructures()
@@ -354,8 +364,10 @@ void RaytracingContext::BuildAccelerationStructures()
 	m_AS.Init(m_DeviceCtx);
 
 	DirectX::XMMATRIX matrix{ DirectX::XMMatrixIdentity() };
-	m_AS.CreateBottomLevel(m_VertexBuffer, m_IndexBuffer, true);
-	m_AS.CreateTopLevel(m_AS.m_BottomLevel.m_ResultBuffer.Get(), matrix);
+	//m_AS.CreateBottomLevels(m_VertexBuffer, m_IndexBuffer, true);
+	//m_AS.CreateTopLevel(m_AS.m_BottomLevel.m_ResultBuffer.Get(), matrix);
+	m_AS.CreateBottomLevels(m_VertexBuffers, m_IndexBuffers, true);
+	m_AS.CreateTopLevel();
 	//m_AS.CreateBottomLevel(m_VertexBuffers, m_IndexBuffers, true);
 	//m_AS.CreateTopLevel(m_AS.m_BottomLevels, matrix);
 
@@ -453,6 +465,27 @@ void RaytracingContext::DrawGUI()
 	//}
 
 	ImGui::End();
+}
+
+void RaytracingContext::OnResize()
+{
+	const auto device{ m_DeviceCtx->GetDevice() };
+
+	auto uavDesc{ CD3DX12_RESOURCE_DESC::Tex2D(
+		DXGI_FORMAT_R8G8B8A8_UNORM,
+		static_cast<uint64_t>(m_DeviceCtx->GetViewport().Width),
+		static_cast<uint32_t>(m_DeviceCtx->GetViewport().Height),
+		1, 1, 1, 0,
+		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) };
+
+	auto defaultHeapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
+	ThrowIfFailed(device->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &uavDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(m_RaytracingOutput.ReleaseAndGetAddressOf())));
+	m_RaytracingOutput.Get()->SetName(L"Raytracing Output");
+
+	m_DeviceCtx->GetMainHeap()->Allocate(m_OutputUAV);
+	D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc{};
+	UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+	device->CreateUnorderedAccessView(m_RaytracingOutput.Get(), nullptr, &UAVDesc, m_OutputUAV.GetCPU());
 }
 
 void RaytracingContext::UpdateCamera()

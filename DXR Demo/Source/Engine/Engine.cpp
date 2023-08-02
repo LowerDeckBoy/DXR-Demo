@@ -121,27 +121,22 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 			{
 				bAppPaused = false;
 				bMinimized = false;
-				//OnResize();
 			}
 			else if (bMaximized)
 			{
 				bAppPaused = false;
 				bMaximized = false;
-				//OnResize();
-			}
-			else
-			{
-				//OnResize();
 			}
 
 			OnResize();
-			return 0;
 		}
+		return 0;
 	}
 	case WM_ENTERSIZEMOVE:
 	{
 		bAppPaused = true;
 		bIsResizing = true;
+
 		m_Timer->Stop();
 
 		break;
@@ -152,7 +147,6 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		bAppPaused = false;
 		bIsResizing = false;
 
-		OnResize();
 		m_Timer->Start();
 
 		break;
@@ -162,11 +156,6 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (GetKeyState(VK_SPACE) & 0x800)
 		{
 			m_Renderer->bRaster = !m_Renderer->bRaster;
-		}
-
-		if (GetKeyState(VK_ESCAPE) & 0x800)
-		{
-			::PostQuitMessage(0);
 		}
 		return 0;
 	}

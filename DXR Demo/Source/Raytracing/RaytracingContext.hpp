@@ -49,8 +49,7 @@ enum class GlobalRootArguments : uint8_t
 class RaytracingContext
 {
 public:
-	RaytracingContext(DeviceContext* pDeviceCtx, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
-	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
+	//RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
 	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index);
 	~RaytracingContext() noexcept(false);
 
@@ -67,7 +66,7 @@ public:
 
 	void OutputToBackbuffer();
 
-	//void OnResize();
+	void OnResize();
 
 	[[maybe_unused]]
 	void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) const;
@@ -75,7 +74,9 @@ public:
 	//test
 	void SetConstBufferData();
 
+
 	void DrawGUI();
+
 
 private:
 	DeviceContext* m_DeviceCtx{ nullptr };
@@ -109,7 +110,7 @@ private:
 
 	// Geometry for lookup
 	VertexBuffer m_VertexBuffer;
-	IndexBuffer m_IndexBuffer;
+	IndexBuffer  m_IndexBuffer;
 
 	std::vector<VertexBuffer> m_VertexBuffers;
 	std::vector<IndexBuffer> m_IndexBuffers;
