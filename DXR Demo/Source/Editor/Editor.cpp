@@ -48,8 +48,11 @@ void Editor::Initialize(DeviceContext* pDeviceCtx, Camera* pCamera, Timer* pTime
 		m_Heap.Get()->GetCPUDescriptorHandleForHeapStart(),
 		m_Heap.Get()->GetGPUDescriptorHandleForHeapStart());
 
-	constexpr float fontSize{ 14.0f };
-	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Font/Roboto-Medium.ttf", fontSize);
+	constexpr float fontSize{ 16.0f };
+	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/Roboto-Medium.ttf", fontSize);
+	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/JetBrainsMonoNerdFontMono-Medium.ttf", fontSize);
+	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-Bold.ttf", fontSize);
+	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-SemiBold.ttf", fontSize);
 
 }
 
@@ -68,11 +71,10 @@ void Editor::EndFrame()
 	{
 		ImGui::BeginMainMenuBar();
 
-		ImGui::Text("GPU: %s | ", m_DeviceCtx->DeviceName.data());
-		ImGui::Text("FPS: %d ms: %.2f | ", m_Timer->m_FPS, m_Timer->m_Miliseconds);
 		MemoryUsage::ReadRAM();
-		ImGui::Text("Memory: %.2f MB", MemoryUsage::MemoryInUse);
-
+		const uint32_t VRAM{ DeviceContext::QueryAdapterMemory() };
+		ImGui::Text("GPU: %s | ", AdapterInfo::AdapterName.data());
+		ImGui::Text("FPS: %d ms: %.2f | Memory: %.2f MB | VRAM: %u MB", m_Timer->m_FPS, m_Timer->m_Miliseconds, MemoryUsage::MemoryInUse, VRAM);
 		ImGui::EndMainMenuBar();
 	}
 
