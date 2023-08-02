@@ -14,6 +14,12 @@
 
 using Microsoft::WRL::ComPtr;
 
+struct AdapterInfo
+{
+	static ComPtr<IDXGIAdapter3> Adapter;
+	static std::string AdapterName;
+};
+
 class DeviceContext
 {
 public:
@@ -52,6 +58,8 @@ public:
 	void OnResize();
 
 	void Release();
+
+	static uint32_t QueryAdapterMemory();
 
 	static const uint32_t FRAME_COUNT{ 3 };
 
@@ -133,7 +141,5 @@ public:
 
 	DescriptorHeap* GetMainHeap() noexcept { return m_MainHeap.get(); }
 	D3D12MA::Allocator* GetAllocator() { return m_Allocator.Get(); }
-
-	std::string DeviceName;
 
 };

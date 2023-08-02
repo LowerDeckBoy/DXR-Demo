@@ -1,10 +1,14 @@
 #include "DeviceContext.hpp"
 #include "Window.hpp"
+#include <algorithm>
 #include "../Utilities/Utilities.hpp"
 
 #if defined (_DEBUG) || (DEBUG)
 #include <dxgidebug.h>
 #endif
+
+ComPtr<IDXGIAdapter3> AdapterInfo::Adapter = nullptr;
+std::string AdapterInfo::AdapterName = "";
 
 DeviceContext::DeviceContext()
 {
@@ -26,7 +30,6 @@ void DeviceContext::Create()
 
     CreateSwapChain();
     CreateBackbuffers();
-
 
     CreateDescriptorHeaps();
     //CreateDepthStencil();
@@ -71,13 +74,16 @@ void DeviceContext::CreateDevice()
 
     ThrowIfFailed(adapter.As(&m_Adapter));
 
+    ThrowIfFailed(adapter.As(&AdapterInfo::Adapter));
+
     // Getting GPU name
     {
         DXGI_ADAPTER_DESC1 desc1{};
         m_Adapter.Get()->GetDesc1(&desc1);
         std::wstring wname{ desc1.Description };
-        std::string name(wname.begin(), wname.end());
-        DeviceName = name;    
+        std::string name(wname.length(), 0);
+        std::transform(wname.begin(), wname.end(), name.begin(), [](wchar_t c) { return (char)c; });
+        AdapterInfo::AdapterName = name;
     }
 
     ComPtr<ID3D12Device> device;
@@ -345,14 +351,17 @@ void DeviceContext::ClearRenderTarget()
 
 void DeviceContext::ReleaseRenderTargets()
 {
-    for (auto& target : m_RenderTargets)
+    for (size_t i = 0; i < FRAME_COUNT; i++)
     {
-        target->Release();
+        m_RenderTargets.at(i).Reset();
+        m_FenceValues.at(i) = m_FenceValues.at(FRAME_INDEX);
     }
 }
 
 void DeviceContext::OnResize()
 {
+    WaitForGPU();
+
     if (!m_Device.Get() || !m_SwapChain.Get() || !GetCommandAllocator())
         throw std::exception();
 
@@ -362,7 +371,7 @@ void DeviceContext::OnResize()
     ReleaseRenderTargets();
 
     if (m_DepthStencil.Get())
-        m_DepthStencil->Release();
+        m_DepthStencil.Reset();
 
     const HRESULT hResult{ m_SwapChain.Get()->ResizeBuffers(DeviceContext::FRAME_COUNT,
                                                 static_cast<uint32_t>(Window::Resolution().Width),
@@ -381,7 +390,7 @@ void DeviceContext::OnResize()
     CreateBackbuffers();
     CreateDepthStencil();
 
-    ExecuteCommandLists();
+    //ExecuteCommandLists();
 }
 
 void DeviceContext::Release()
@@ -404,6 +413,14 @@ void DeviceContext::Release()
     SAFE_RELEASE(m_Device);
     SAFE_RELEASE(m_Adapter);
     SAFE_RELEASE(m_Factory);
+}
+
+uint32_t DeviceContext::QueryAdapterMemory()
+{
+    DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo{};
+    AdapterInfo::Adapter.Get()->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &memoryInfo);
+
+    return static_cast<uint32_t>(memoryInfo.CurrentUsage / 1024 / 1024);
 }
 
 ID3D12CommandAllocator* DeviceContext::GetCommandAllocator(uint32_t Index) const
