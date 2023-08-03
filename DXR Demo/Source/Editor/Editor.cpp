@@ -26,48 +26,50 @@ void Editor::Initialize(DeviceContext* pDeviceCtx, Camera* pCamera, Timer* pTime
 	assert(m_DeviceCtx = pDeviceCtx);
 	assert(m_Timer = pTimer);
 
-	CreateHeap();
-
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
 	ImGuiIO& IO{ ImGui::GetIO() };
-	IO.FontGlobalScale = 1.0f;
-	IO.ConfigFlags |= ImGuiWindowFlags_AlwaysAutoResize;
-
 	ImGuiStyle& Style{ ImGui::GetStyle() };
+	//IO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+	//IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+	//IO.ConfigFlags  |= ImGuiConfigFlags_DockingEnable;
+	//IO.ConfigFlags  |= ImGuiConfigFlags_ViewportsEnable;
+
 	ImGui::StyleColorsDark();
 	Style.WindowRounding = 5.0f;
 	Style.WindowBorderSize = 0.0f;
 
-	ImGui_ImplWin32_Init(Window::GetHWND());
-	ImGui_ImplDX12_Init(m_DeviceCtx->GetDevice(),
+	CreateHeap();
+	assert(ImGui_ImplWin32_Init(Window::GetHWND()));
+	assert(ImGui_ImplDX12_Init(m_DeviceCtx->GetDevice(),
 		DeviceContext::FRAME_COUNT,
 		m_DeviceCtx->GetRenderTargetFormat(),
 		m_Heap.Get(),
 		m_Heap.Get()->GetCPUDescriptorHandleForHeapStart(),
-		m_Heap.Get()->GetGPUDescriptorHandleForHeapStart());
+		m_Heap.Get()->GetGPUDescriptorHandleForHeapStart()));
 
-	constexpr float fontSize{ 16.0f };
+	constexpr float fontSize{ 15.0f };
+	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-Bold.ttf", fontSize);
+	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-SemiBold.ttf", fontSize);
 	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/Roboto-Medium.ttf", fontSize);
 	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/JetBrainsMonoNerdFontMono-Medium.ttf", fontSize);
-	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-Bold.ttf", fontSize);
-	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-SemiBold.ttf", fontSize);
 
 }
 
 void Editor::BeginFrame()
 {
-	ImGui_ImplWin32_NewFrame();
 	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-	
+
 	ImGui::PushFont(m_Font);
+
 }
 
 void Editor::EndFrame()
 {
-	// Main Menu Bar
+	// Menu Bar
 	{
 		ImGui::BeginMainMenuBar();
 
@@ -75,6 +77,7 @@ void Editor::EndFrame()
 		const uint32_t VRAM{ DeviceContext::QueryAdapterMemory() };
 		ImGui::Text("GPU: %s | ", AdapterInfo::AdapterName.data());
 		ImGui::Text("FPS: %d ms: %.2f | Memory: %.2f MB | VRAM: %u MB", m_Timer->m_FPS, m_Timer->m_Miliseconds, MemoryUsage::MemoryInUse, VRAM);
+
 		ImGui::EndMainMenuBar();
 	}
 
@@ -84,11 +87,6 @@ void Editor::EndFrame()
 
 	m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(1, m_Heap.GetAddressOf());
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_DeviceCtx->GetCommandList());
-}
-
-void Editor::OnResize()
-{
-	//IO.DisplaySize = ImVec2(Window::Resolution().Width, Window::Resolution().Height);
 }
 
 void Editor::CreateHeap()

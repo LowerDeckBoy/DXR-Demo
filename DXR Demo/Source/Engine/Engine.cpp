@@ -1,7 +1,7 @@
 #include "Engine.hpp"
 #include "../Inputs/CameraInputs.hpp"
 #include "../Rendering/Camera.hpp"
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 
 Engine::Engine(HINSTANCE hInstance)
@@ -33,7 +33,7 @@ void Engine::Run()
 {
 	m_Camera->ResetCamera();
 
-	Show();
+	Window::Show();
 	m_Timer->Reset();
 	m_Timer->Start();
 
@@ -129,7 +129,7 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 			}
 
 			OnResize();
-		}
+		}	
 		return 0;
 	}
 	case WM_ENTERSIZEMOVE:
@@ -139,9 +139,8 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
 		m_Timer->Stop();
 
-		break;
+		return 0;
 	}
-
 	case WM_EXITSIZEMOVE:
 	{
 		bAppPaused = false;
@@ -149,7 +148,7 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
 		m_Timer->Start();
 
-		break;
+		return 0;
 	}
 	case WM_KEYDOWN:
 	{
@@ -159,14 +158,15 @@ LRESULT Engine::WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	}
-
 	case WM_CLOSE:
 	case WM_DESTROY:
 	{
 		::PostQuitMessage(0);
 		return 0;
 	}
+	default:
+		return ::DefWindowProcW(hWnd, Msg, wParam, lParam);
 	}
 
-	return ::DefWindowProcW(hWnd, Msg, wParam, lParam);
+	return 0;
 }

@@ -22,7 +22,7 @@ private:
 	std::unique_ptr<Renderer> m_Renderer;
 	std::unique_ptr<Camera> m_Camera;
 
-	LRESULT WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) override;
+	LRESULT WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) final;
 
 };
 
