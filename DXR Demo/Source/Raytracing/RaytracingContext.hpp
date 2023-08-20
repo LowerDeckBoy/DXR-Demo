@@ -1,7 +1,6 @@
 #pragma once
 #include <d3d12.h>
 #include <DirectXMath.h>
-#include <string>
 #include "../Core/DeviceContext.hpp"
 #include "../Graphics/Buffer/ConstantBuffer.hpp"
 #include "../Graphics/Shader.hpp"
@@ -11,6 +10,7 @@
 class Camera;
 class VertexBuffer;
 class IndexBuffer;
+class Model;
 
 // Scene buffer for 3D
 struct RaytraceBuffer
@@ -36,20 +36,24 @@ struct CubeBuffer
 };
 
 // TODO:
-enum class LocalRootArguments : uint8_t
+enum LocalRootArguments
 {
-
+	eAlbedo = 0,
+	eTexture
 };
 
-enum class GlobalRootArguments : uint8_t
+enum GlobalRootArguments
 {
-
+	eOutputUAV = 0,
+	eTopLevel,
+	eCameraBuffer,
+	eSceneBuffer,
+	eTexResolution
 };
 
 class RaytracingContext
 {
 public:
-	//RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index);
 	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index);
 	~RaytracingContext() noexcept(false);
 
@@ -74,9 +78,7 @@ public:
 	//test
 	void SetConstBufferData();
 
-
 	void DrawGUI();
-
 
 private:
 	DeviceContext* m_DeviceCtx{ nullptr };
@@ -96,14 +98,17 @@ private:
 	ComPtr<IDxcBlob> m_RayGenShader;
 	ComPtr<IDxcBlob> m_MissShader;
 	ComPtr<IDxcBlob> m_HitShader;
+	ComPtr<IDxcBlob> m_ShadowShader;
 
 	// Shader Root Signatures
 	ComPtr<ID3D12RootSignature> m_GlobalRootSignature;
-	ComPtr<ID3D12RootSignature> m_HitRootSignature;
+	ComPtr<ID3D12RootSignature> m_LocalRootSignature;
+	ComPtr<ID3D12RootSignature> m_ShadowRootSignature;
 
 	uint32_t m_PayloadSize		{ 0 };
 	uint32_t m_AttributeSize	{ 0 };
 	// 1 -> Primary rays
+	// 2 -> Simple shadowing
 	uint32_t m_MaxRecursiveDepth{ 1 };
 
 	AccelerationStructures m_AS;
@@ -119,6 +124,10 @@ private:
 	ShaderTable m_RayGenTable;
 	ShaderTable m_MissTable;
 	ShaderTable m_HitTable;
+	//
+	//ShaderTable m_ShadowTable;
+
+	//std::vector<Model*> m_Models;
 
 	// For single buffer shader table storage
 	//std::unique_ptr<ShaderTableBuilder> m_ShaderTableBuilder;
