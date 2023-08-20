@@ -5,6 +5,7 @@
 #include "../Utilities/Utilities.hpp"
 #include "../Utilities/Timer.hpp"
 #include "../Utilities/MemoryUsage.hpp"
+#include "../Core/Renderer.hpp"
 
 
 Editor::Editor()
@@ -77,6 +78,8 @@ void Editor::EndFrame()
 		const uint32_t VRAM{ DeviceContext::QueryAdapterMemory() };
 		ImGui::Text("GPU: %s | ", AdapterInfo::AdapterName.data());
 		ImGui::Text("FPS: %d ms: %.2f | Memory: %.2f MB | VRAM: %u MB", m_Timer->m_FPS, m_Timer->m_Miliseconds, MemoryUsage::MemoryInUse, VRAM);
+
+		ImGui::Checkbox("VSync", &Renderer::bVSync);
 
 		ImGui::EndMainMenuBar();
 	}
