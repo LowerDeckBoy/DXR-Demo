@@ -17,6 +17,10 @@ Window::Window(HINSTANCE hInstance)
 {
 	window = this;
 	m_hInstance = hInstance;
+
+	m_Resolution.Width = 1280;
+	m_Resolution.Height = 800;
+	m_Resolution.AspectRatio = static_cast<float>(m_Resolution.Width) / static_cast<float>(m_Resolution.Height);
 }
 
 Window::~Window()
@@ -41,7 +45,7 @@ void Window::Initialize()
 	wcex.lpfnWndProc = MsgProc;
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpszClassName = m_WindowClass;
-	wcex.hbrBackground = static_cast<HBRUSH>(::CreateSolidBrush(RGB(20, 20, 20)));
+	wcex.hbrBackground = ::CreateSolidBrush(RGB(20, 20, 20));
 
 	if (!::RegisterClassEx(&wcex))
 	{
@@ -58,7 +62,7 @@ void Window::Initialize()
 	if (!m_hWnd)
 		throw std::exception("Failed to Create Window!\n");
 
-	const int32_t xPos = (::GetSystemMetrics(SM_CXSCREEN) - m_Rect.right) / 2;
+	const int32_t xPos = (::GetSystemMetrics(SM_CXSCREEN) - m_Rect.right)  / 2;
 	const int32_t yPos = (::GetSystemMetrics(SM_CYSCREEN) - m_Rect.bottom) / 2;
 	// 
 	::SetWindowPos(m_hWnd, 0, xPos, yPos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
@@ -75,19 +79,34 @@ void Window::Show()
 		throw std::exception("Failed to get Window HWND!\n");
 
 	//::SendMessageA(m_hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+	::ShowWindow(m_hWnd, SW_SHOW);
 	::SetForegroundWindow(m_hWnd);
 	::SetFocus(m_hWnd);
-	::ShowWindow(m_hWnd, SW_SHOW);
 	::UpdateWindow(m_hWnd);
 }
 
-void Window::ShowCursor()
+HINSTANCE Window::GetHInstance()
+{
+	return m_hInstance;
+}
+
+HWND Window::GetHWND()
+{
+	return m_hWnd;
+}
+
+Window::DisplayResolution Window::Resolution()
+{
+	return m_Resolution;
+}
+
+void Window::ShowCursor() noexcept
 {
 	while (::ShowCursor(TRUE) < 0)
 		bCursorVisible = true;
 }
 
-void Window::HideCursor()
+void Window::HideCursor() noexcept
 {
 	while (::ShowCursor(FALSE) >= 0)
 		bCursorVisible = false;
