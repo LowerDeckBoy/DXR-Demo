@@ -70,6 +70,41 @@ void Camera::ResetCamera() noexcept
 	m_Pitch = 0.0f;
 }
 
+const DirectX::XMMATRIX& Camera::GetView() const noexcept
+{
+	return m_View;
+}
+
+const DirectX::XMMATRIX& Camera::GetProjection() const noexcept
+{
+	return m_Projection;
+}
+
+const DirectX::XMMATRIX Camera::GetViewProjection() noexcept
+{
+	return XMMatrixMultiply(m_View, m_Projection);
+}
+
+const DirectX::XMVECTOR& Camera::GetPosition() const noexcept
+{
+	return m_Position;
+}
+
+const DirectX::XMFLOAT4 Camera::GetPositionFloat() const noexcept
+{
+	return DirectX::XMFLOAT4(m_Position.m128_f32[0], m_Position.m128_f32[1], m_Position.m128_f32[2], 0.0f);
+}
+
+const DirectX::XMVECTOR& Camera::GetTarget() const noexcept
+{
+	return m_Target;
+}
+
+const DirectX::XMVECTOR& Camera::GetUp() const noexcept
+{
+	return m_Up;
+}
+
 /*
 void Camera::DrawGUI()
 {
