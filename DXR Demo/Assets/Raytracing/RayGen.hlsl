@@ -1,10 +1,10 @@
 #ifndef RAYGEN_HLSL
 #define RAYGEN_HLSL
 
-#include "Common.hlsl"
+#include "Common.hlsli"
 
-RWTexture2D<float4> RaytraceScene : register(u0, space0);
-RaytracingAccelerationStructure SceneTopLevel : register(t0, space0);
+
+//RaytracingAccelerationStructure SceneTopLevel : register(t0, space0);
 
 [shader("raygeneration")]
 void RayGen()
@@ -13,7 +13,7 @@ void RayGen()
 
     uint2 launchIndex = DispatchRaysIndex().xy;
     float2 dims = float2(DispatchRaysDimensions().xy);
-    float2 d = ((launchIndex.xy + 0.5f) / dims.xy) * 2.f - 1.f;
+    float2 d = ((launchIndex.xy + 0.5f) / dims.xy) * 2.0f - 1.0f;
     
     float2 xy = launchIndex + 0.5f; // center in the middle of the pixel.
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
@@ -30,13 +30,12 @@ void RayGen()
     RayDesc ray;
     ray.Origin = origin;
     ray.Direction = direction;
-    // TMin -> zNear, TMax -> zFar
-    ray.TMin = 0.01f;
-    ray.TMax = 100000.0f;
+    ray.TMin = 0.01f;       //-> zNear
+    ray.TMax = 1000.0f;     //-> zFar
     //RAY_FLAG_CULL_BACK_FACING_TRIANGLES
-    TraceRay(SceneTopLevel, RAY_FLAG_NONE, ~0, 0, 1, 0, ray, payload);
+    TraceRay(gSceneTopLevel, RAY_FLAG_NONE, 0xFF, 0, 1, 0, ray, payload);
     
-    RaytraceScene[launchIndex] = payload.Color;
+    gRaytraceScene[launchIndex] = payload.Color;
 }
 
 /*

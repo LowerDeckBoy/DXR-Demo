@@ -2,6 +2,8 @@
 #include "Renderer.hpp"
 #include "../Utilities/Utilities.hpp"
 
+bool Renderer::bVSync = true;
+
 Renderer::Renderer(Camera* pCamera, Timer* pTimer)
 {
 	Initalize(pCamera, pTimer);
@@ -9,56 +11,37 @@ Renderer::Renderer(Camera* pCamera, Timer* pTimer)
 
 Renderer::~Renderer()
 {
-	Destroy();
+	Release();
 }
 
 void Renderer::Initalize(Camera* pCamera, Timer* pTimer)
 {
 	m_DeviceCtx = std::make_unique<DeviceContext>();
 
-	CreatePipelines();
-
 	m_ShaderManager = std::make_shared<ShaderManager>();
 	m_Editor = std::make_unique<Editor>();
 	m_Editor->Initialize(m_DeviceCtx.get(), pCamera, pTimer);
 
+	CreatePipelines();
+
 	LoadAssets();
 
-	// Pass current object geometry data
-	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_VertexBuffer, m_IndexBuffer);
-	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, m_Cube.m_VertexBuffer, m_Cube.m_IndexBuffer);
-	//std::vector<VertexBuffer> vertices{ m_Cube.m_VertexBuffer, m_Plane.m_VertexBuffer };
-	//std::vector<IndexBuffer> indices{ m_Cube.m_IndexBuffer, m_Plane.m_IndexBuffer };
-
-	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertices, indices);
+	// Pass current objects geometry data
+	std::vector<VertexBuffer> vertex{ m_Cube->m_VertexBuffer, m_Plane->m_VertexBuffer };
+	std::vector<IndexBuffer> index{ m_Cube->m_IndexBuffer, m_Plane->m_IndexBuffer };
+	
+	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index);
 
 	m_DeviceCtx->ExecuteCommandLists();
 	m_DeviceCtx->WaitForGPU();
-
+	
 }
 
 void Renderer::LoadAssets()
 {
-	m_Cube.Create(m_DeviceCtx.get());
-	m_Plane.Create(m_DeviceCtx.get());
+	m_Cube = new Cube(m_DeviceCtx.get());
+	m_Plane = new Plane(m_DeviceCtx.get());
 
-	// Triangle data
-	/*
-	float aspectRatio{ m_DeviceCtx->GetViewport().Width / m_DeviceCtx->GetViewport().Height };
-	std::vector<SimpleVertex> triangleVertices = {
-			{ { +0.0f,  +0.25f * aspectRatio, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
-			{ { +0.25f, -0.25f * aspectRatio, 0.0f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
-			{ { -0.25f, -0.25f * aspectRatio, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } }
-	};
-
-	std::vector<uint32_t> indices {
-		0, 1, 2
-	};
-
-	m_VertexBuffer.Create(m_DeviceCtx.get(), BufferData(triangleVertices.data(), triangleVertices.size(), sizeof(triangleVertices.at(0)) * triangleVertices.size(), sizeof(SimpleVertex)), BufferDesc());
-
-	m_IndexBuffer.Create(m_DeviceCtx.get(), BufferData(indices.data(), indices.size(), sizeof(uint32_t) * indices.size(), sizeof(uint32_t)), BufferDesc());
-	*/
 }
 
 void Renderer::OnRaytrace()
@@ -77,7 +60,7 @@ void Renderer::Render(Camera* pCamera)
 	ID3D12CommandList* commandLists[]{ m_DeviceCtx->GetCommandList() };
 	m_DeviceCtx->GetCommandQueue()->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-	const HRESULT hResult{ m_DeviceCtx->GetSwapChain()->Present(1, 0) };
+	const HRESULT hResult{ m_DeviceCtx->GetSwapChain()->Present(bVSync ? 1 : 0, 0) };
 	if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET)
 	{
 		throw std::logic_error("Device Removed!");
@@ -88,20 +71,26 @@ void Renderer::Render(Camera* pCamera)
 
 void Renderer::OnResize()
 {
-	// TODO:
-	m_DeviceCtx->WaitForGPU();
-	m_DeviceCtx->FlushGPU();
 	m_DeviceCtx->OnResize();
-	m_RaytracingContext->CreateOutputResource();
-	m_DeviceCtx->WaitForGPU();
+	m_RaytracingContext->OnResize();
+
+	m_DeviceCtx->WaitForGPU(); 
+	m_DeviceCtx->FlushGPU();
+	m_DeviceCtx->ExecuteCommandLists();
 }
 
-void Renderer::Destroy()
+void Renderer::Release()
 {
 	m_DeviceCtx->WaitForGPU();
 
 	SAFE_RELEASE(m_PipelineState);
 	SAFE_RELEASE(m_RootSignature);
+
+	if (m_ShaderManager)
+	{
+		m_ShaderManager.reset();
+		m_ShaderManager = nullptr;
+	}
 
 	::CloseHandle(m_DeviceCtx->m_FenceEvent);
 }
@@ -109,18 +98,18 @@ void Renderer::Destroy()
 void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 {
 	BeginFrame();
-	
 
 	SetHeaps(m_DeviceCtx->GetMainHeap()->GetHeapAddressOf());
+
 	// Spacebar to switch modes
 	if (bRaster)
 	{
-
 		m_DeviceCtx->ClearRenderTarget();
 		m_DeviceCtx->GetCommandList()->SetPipelineState(m_PipelineState.Get());
 		m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
-		m_Plane.Draw(pCamera->GetViewProjection());
-		m_Cube.Draw(pCamera->GetViewProjection());
+		m_DeviceCtx->GetCommandList()->SetGraphicsRootDescriptorTable(3, m_DeviceCtx->GetMainHeap()->GetHeap()->GetGPUDescriptorHandleForHeapStart());
+		m_Plane->Draw(pCamera->GetViewProjection());
+		m_Cube->Draw(pCamera->GetViewProjection());
 	}
 	else // Raytrace
 	{
@@ -140,10 +129,11 @@ void Renderer::BeginFrame()
 	m_DeviceCtx->GetCommandList()->RSSetViewports(1, &viewport);
 	m_DeviceCtx->GetCommandList()->RSSetScissorRects(1, &rect);
 
+	m_Editor->BeginFrame();
+
 	TransitToRender();
 	m_DeviceCtx->SetRenderTarget();
 
-	m_Editor->BeginFrame();
 }
 
 void Renderer::EndFrame()
@@ -184,41 +174,70 @@ void Renderer::SetHeaps(ID3D12DescriptorHeap** ppHeap)
 
 void Renderer::CreatePipelines()
 {
-	//m_VertexShader.Create("Assets/Shaders/Vertex_Triangle.hlsl", "vs_5_1");
-	//m_PixelShader.Create("Assets/Shaders/Pixel_Triangle.hlsl", "ps_5_1");
-	m_VertexShader.Create("Assets/Shaders/Global_Vertex.hlsl", "vs_5_1");
-	m_PixelShader.Create("Assets/Shaders/Global_Pixel.hlsl", "ps_5_1");
+	m_VertexShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Global_Vertex.hlsl", L"vs_6_0");
+	m_PixelShader  = m_ShaderManager->CreateDXIL("Assets/Shaders/Global_Pixel.hlsl", L"ps_6_0");
+	//m_VertexShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Model_Vertex.hlsl", L"vs_6_0");
+	//m_PixelShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Model_Pixel.hlsl", L"ps_6_0");
 
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges{};
-	// Vertex
-	ranges.at(0).Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+	std::array<CD3DX12_DESCRIPTOR_RANGE1, 1> ranges{};
+	ranges.at(0).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 64, 0, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
-	std::array<CD3DX12_ROOT_PARAMETER, 1> parameters{};
+	std::array<CD3DX12_ROOT_PARAMETER1, 5> parameters{};
 	// Vertex 
-	parameters.at(0).InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	parameters.at(0).InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+	// Camera Position
+	parameters.at(1).InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL);
+	// Pixel Constant Buffer
+	parameters.at(2).InitAsConstantBufferView(0, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+	// Bindless
+	parameters.at(3).InitAsDescriptorTable(1, &ranges.at(0), D3D12_SHADER_VISIBILITY_ALL);
+	// Material indices
+	parameters.at(4).InitAsConstants(4 * sizeof(int32_t), 0, 2);
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
-	rootSignatureDesc.Init(static_cast<uint32_t>(parameters.size()), parameters.data(), 0, nullptr,
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	D3D12_STATIC_SAMPLER_DESC samplerDesc{};
+	samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
+	samplerDesc.MaxAnisotropy = 0;
+	samplerDesc.MinLOD = 0.0f;
+	samplerDesc.MaxLOD = static_cast<float>(UINT32_MAX);
+	samplerDesc.ShaderRegister = 0;
+	samplerDesc.RegisterSpace = 0;
+	samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc{};
+	rootSignatureDesc.Init_1_1(static_cast<uint32_t>(parameters.size()), parameters.data(), 1, &samplerDesc, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> signature;
 	ComPtr<ID3DBlob> error;
-	ThrowIfFailed(D3D12SerializeRootSignature(
+	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
 		&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
 	ThrowIfFailed(m_DeviceCtx->GetDevice()->CreateRootSignature(
 		0, signature->GetBufferPointer(), signature->GetBufferSize(),
 		IID_PPV_ARGS(&m_RootSignature)));
 
+	SAFE_RELEASE(signature);
+	SAFE_RELEASE(error);
+
 	std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs{};
 	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	inputElementDescs.at(1) = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	//inputElementDescs.at(1) = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	//std::array<D3D12_INPUT_ELEMENT_DESC, 5> inputElementDescs{};
+	//inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	//inputElementDescs.at(1) = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	//inputElementDescs.at(2) = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	//inputElementDescs.at(3) = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	//inputElementDescs.at(4) = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	psoDesc.InputLayout = { inputElementDescs.data(), static_cast<uint32_t>(inputElementDescs.size())};
 	psoDesc.pRootSignature = m_RootSignature.Get();
-	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_VertexShader.GetData());
-	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_PixelShader.GetData());
+	psoDesc.VS = { m_VertexShader.Get()->GetBufferPointer(), m_VertexShader.Get()->GetBufferSize() };
+	psoDesc.PS = { m_PixelShader.Get()->GetBufferPointer(), m_PixelShader.Get()->GetBufferSize() };
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;

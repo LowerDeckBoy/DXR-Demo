@@ -18,14 +18,14 @@ public:
 
 	void ResetCamera() noexcept;
 
-	const inline DirectX::XMMATRIX& GetView() const noexcept { return m_View; }
-	const inline DirectX::XMMATRIX& GetProjection() const noexcept { return m_Projection; }
-	const inline DirectX::XMMATRIX  GetViewProjection() noexcept { return XMMatrixMultiply(m_View, m_Projection); }
+	const DirectX::XMMATRIX& GetView() const noexcept;
+	const DirectX::XMMATRIX& GetProjection() const noexcept;
+	const DirectX::XMMATRIX  GetViewProjection() noexcept;
 
-	const inline DirectX::XMVECTOR& GetPosition() const noexcept { return m_Position; }
-	const inline DirectX::XMFLOAT3 GetPositionFloat() const noexcept { return DirectX::XMFLOAT3(m_Position.m128_f32[0], m_Position.m128_f32[1], m_Position.m128_f32[2]); }
-	const inline DirectX::XMVECTOR& GetTarget() const noexcept { return m_Target; }
-	const inline DirectX::XMVECTOR& GetUp() const noexcept { return m_Up; }
+	const DirectX::XMVECTOR& GetPosition() const noexcept;
+	const DirectX::XMFLOAT4 GetPositionFloat() const noexcept;
+	const DirectX::XMVECTOR& GetTarget() const noexcept;
+	const DirectX::XMVECTOR& GetUp() const noexcept;
 
 	//void DrawGUI();
 

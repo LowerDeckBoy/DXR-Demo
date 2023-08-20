@@ -3,7 +3,8 @@
 
 #include "Common.hlsl"
 
-struct TriangleVertex {
+struct TriangleVertex 
+{
     float3 Vertex;
     float4 Color;
 };

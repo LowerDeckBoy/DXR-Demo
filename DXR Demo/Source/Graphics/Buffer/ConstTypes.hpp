@@ -6,7 +6,6 @@ struct cbPerObject
 {
 	XMMATRIX WVP{ XMMatrixIdentity() };
 	XMMATRIX World{ XMMatrixIdentity() };
-	float padding[32]{};
 };
 
 struct cbCamera
@@ -16,11 +15,7 @@ struct cbCamera
 
 struct cbMaterial
 {
-	XMFLOAT4 Ambient { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) };
-	XMFLOAT4 Diffuse { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f) };
-	// 3 floats for color, 1 for intensity
-	XMFLOAT4 Specular{ XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f) };
-	XMFLOAT4 Direction{ XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f) };
+	XMFLOAT4 CameraPosition{ XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f) };
 
 	XMFLOAT4 BaseColorFactor{ XMFLOAT4(1.0f, 1.0f,1.0f, 1.0f) };
 	XMFLOAT4 EmissiveFactor{ XMFLOAT4(1.0f, 1.0f,1.0f, 1.0f) };
@@ -28,7 +23,12 @@ struct cbMaterial
 	float MetallicFactor{ 1.0f };
 	float RoughnessFactor{ 1.0f };
 	float AlphaCutoff{ 0.5f };
-	float padding;
+	BOOL  bDoubleSided{ false };
 
-	XMFLOAT4 padding2[9];
+	int32_t BaseColorIndex{ -1 };
+	int32_t NormalIndex{ -1 };
+	int32_t MetallicRoughnessIndex{ -1 };
+	int32_t EmissiveIndex{ -1 };
+
+	//XMFLOAT4 padding2[8]{};
 };

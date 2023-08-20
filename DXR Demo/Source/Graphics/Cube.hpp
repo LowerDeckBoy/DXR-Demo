@@ -28,7 +28,7 @@ public:
 	// Default colored Cube
 	void Create(DeviceContext* pDevice);
 	void Draw();
-	void Draw(DirectX::XMMATRIX ViewProjection);
+	void Draw(const DirectX::XMMATRIX& ViewProjection);
 	void Release();
 
 //private:

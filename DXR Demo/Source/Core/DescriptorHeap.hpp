@@ -16,16 +16,36 @@ public:
 	[[nodiscard]] inline D3D12_CPU_DESCRIPTOR_HANDLE GetCPU() const noexcept { return m_cpuHandle; }
 	[[nodiscard]] inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPU() const noexcept { return m_gpuHandle; }
 
+	uint32_t Index{ 0 };
+
+	inline bool IsValid() {
+		return m_cpuHandle.ptr != 0;
+	}
+
 };
 
 class DescriptorHeap
 {
 public:
-	void Allocate(Descriptor& targetDescriptor)
+	void Allocate(Descriptor& TargetDescriptor)
 	{
-		targetDescriptor.SetCPU(GetCPUptr(m_Allocated));
-		targetDescriptor.SetGPU(GetGPUptr(m_Allocated));
-		m_Allocated++;
+		if (TargetDescriptor.IsValid())
+		{
+			Override(TargetDescriptor);
+		}
+		else
+		{
+			TargetDescriptor.SetCPU(GetCPUptr(m_Allocated));
+			TargetDescriptor.SetGPU(GetGPUptr(m_Allocated));
+			TargetDescriptor.Index = m_Allocated;
+			m_Allocated++;
+		}
+	}
+
+	void Override(Descriptor& TargetDescriptor)
+	{
+		TargetDescriptor.SetCPU(GetCPUptr(TargetDescriptor.Index));
+		TargetDescriptor.SetGPU(GetGPUptr(TargetDescriptor.Index));
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUptr(uint32_t Index)

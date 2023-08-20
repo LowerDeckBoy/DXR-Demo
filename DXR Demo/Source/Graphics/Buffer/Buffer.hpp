@@ -28,13 +28,25 @@ struct BufferDesc
 	DXGI_FORMAT				Format{ DXGI_FORMAT_UNKNOWN };
 };
 
+enum class BufferType : uint8_t
+{
+	eVertex = 0,
+	eIndex,
+	eConstant,
+	eStructured
+};
+
 class Buffer
 {
 public:
-	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
+	~Buffer();
+
+	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc, BufferType TypeOf);
 	
 	void MapMemory();
 	
+	void Release();
+
 	inline ID3D12Resource* GetBuffer() const noexcept { return m_Buffer.Get(); }
 
 	inline D3D12_GPU_VIRTUAL_ADDRESS GetGPUAddress() const { return m_Buffer.Get()->GetGPUVirtualAddress(); }
@@ -48,63 +60,48 @@ protected:
 	DeviceContext* m_DeviceCtx{ nullptr };
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_Buffer;
+	//D3D12MA::Allocation* m_Allocation{ nullptr };
 
 	BufferDesc m_BufferDesc{};
 	BufferData m_BufferData{};
 };
 
-class VertexBuffer
+class VertexBuffer : public Buffer
 {
 public:
 	VertexBuffer() noexcept {}
-	VertexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
-	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
-	}
-
-	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
-	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
-	}
-
-	Buffer Buffer;
+	VertexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
+	~VertexBuffer();
+	
+	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
+	
 	D3D12_VERTEX_BUFFER_VIEW View{};
-
-	void SetView()
-	{
-		View.BufferLocation = this->Buffer.GetGPUAddress();
-		View.SizeInBytes = static_cast<uint32_t>(this->Buffer.GetData().Size);
-		View.StrideInBytes = static_cast<uint32_t>(this->Buffer.GetData().Size) / this->Buffer.GetData().ElementsCount;
-	}
+private:
+	void SetView();
 };
 
-class IndexBuffer
+class IndexBuffer : public Buffer
 {
 public:
 	IndexBuffer() noexcept {}
-	IndexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
-	{
-		Buffer.Create(pDevice, Data, Desc);
-		SetView();
-	}
+	IndexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
+	~IndexBuffer();
+	
 
 	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
 	{
-		Buffer.Create(pDevice, Data, Desc);
+		Buffer::Create(pDevice, Data, Desc, BufferType::eIndex);
 		SetView();
 	}
+	// TODO:
+	// Check whether indices count is greater than 16bits
+	// if so, use DXGI_FORMAT_R16_UINT format
+	bool IsR32bits();
 
-	Buffer Buffer;
 	D3D12_INDEX_BUFFER_VIEW View{};
 	uint32_t Count{ 0 };
 
-	void SetView()
-	{
-		View.BufferLocation = this->Buffer.GetGPUAddress();
-		View.Format = DXGI_FORMAT_R32_UINT;
-		View.SizeInBytes = static_cast<uint32_t>(this->Buffer.GetData().Size);
-		Count = this->Buffer.GetData().ElementsCount;
-	}
+private:
+	void SetView();
+	
 };

@@ -1,0 +1,17 @@
+{
+    "name": "dxr-demo",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "assimp",
+        {
+            "name": "imgui",
+            "features": [ "dx12-binding", "win32-binding", "docking-experimental" ]
+        },
+        {
+            "name": "directxtex",
+            "features": [ "dx12" ]
+        },
+        "directxtk12"
+
+    ]
+}

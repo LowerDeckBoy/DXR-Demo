@@ -16,13 +16,13 @@ class Window
 {
 public:
 	explicit Window(HINSTANCE hInstance);
-	~Window();
+	Window(const Window&) = delete;
+	virtual ~Window();
 
 	void Initialize();
 	void Show();
 
 	virtual void OnResize() = 0;
-
 	virtual LRESULT WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) = 0;
 
 private:
@@ -39,45 +39,41 @@ private:
 	bool bInitialized{ false };
 
 public:
-	static struct DisplayResolution
+	inline static struct DisplayResolution
 	{
-		DisplayResolution() { }
-		DisplayResolution(uint32_t Width, uint32_t Height)
+		void Set(uint32_t Width, uint32_t Height)
 		{
-			Set(Width, Height);
+			this->Width = Width;
+			this->Height = Height;
+			this->AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
 		}
 
-		static void Set(uint32_t Width, uint32_t Height)
-		{
-			Width = Width;
-			Height = Height;
-			AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
-		}
-
-		static inline uint32_t Width{ 1280 };
-		static inline uint32_t Height{ 800 };
-		static inline float AspectRatio{ static_cast<float>(Width) / static_cast<float>(Height) };
+		uint32_t Width;
+		uint32_t Height;
+		float AspectRatio;
 	} m_Resolution;
 
 public:
-	[[nodiscard]] inline static HINSTANCE GetHInstance() { return m_hInstance; }
-	[[nodiscard]] inline static HWND GetHWND() { return m_hWnd; }
+	[[nodiscard]] 
+	static HINSTANCE GetHInstance();
+	[[nodiscard]] 
+	static HWND GetHWND();
 
-	static inline DisplayResolution Resolution() { return m_Resolution; }
+	[[nodiscard]]
+	static DisplayResolution Resolution();
 
-	static void ShowCursor();
-	static void HideCursor();
+	static void ShowCursor() noexcept;
+	static void HideCursor() noexcept;
 
 protected:	
 	// Application timer
-	// used for app pausing and resuming
-	// also for Elapsed Time and DeltaTime
+	// used for app pausing,resuming elapsed time and DeltaTime
 	std::unique_ptr<Timer> m_Timer;
 
 	// Window states for window moving and resizing
-	inline static bool bAppPaused { false };
-	inline static bool bMinimized { false };
-	inline static bool bMaximized { false };
-	inline static bool bIsResizing{ false };
+	bool bAppPaused { false };
+	bool bMinimized { false };
+	bool bMaximized { false };
+	bool bIsResizing{ false };
 
 };

@@ -1,10 +1,14 @@
 #include "DeviceContext.hpp"
 #include "Window.hpp"
+#include <algorithm>
 #include "../Utilities/Utilities.hpp"
 
 #if defined (_DEBUG) || (DEBUG)
 #include <dxgidebug.h>
 #endif
+
+ComPtr<IDXGIAdapter3> AdapterInfo::Adapter = nullptr;
+std::string AdapterInfo::AdapterName = "";
 
 DeviceContext::DeviceContext()
 {
@@ -25,10 +29,9 @@ void DeviceContext::Create()
     CreateFence();
 
     CreateSwapChain();
+    CreateDescriptorHeaps();
     CreateBackbuffers();
 
-
-    CreateDescriptorHeaps();
     //CreateDepthStencil();
 }
 
@@ -71,36 +74,56 @@ void DeviceContext::CreateDevice()
 
     ThrowIfFailed(adapter.As(&m_Adapter));
 
+    ThrowIfFailed(adapter.As(&AdapterInfo::Adapter));
+
     // Getting GPU name
     {
         DXGI_ADAPTER_DESC1 desc1{};
         m_Adapter.Get()->GetDesc1(&desc1);
         std::wstring wname{ desc1.Description };
-        std::string name(wname.begin(), wname.end());
-        DeviceName = name;    
+        std::string name(wname.length(), 0);
+        std::transform(wname.begin(), wname.end(), name.begin(), [](wchar_t c) { return (char)c; });
+        AdapterInfo::AdapterName = name;
     }
 
     ComPtr<ID3D12Device> device;
     ThrowIfFailed(D3D12CreateDevice(m_Adapter.Get(), m_FeatureLevel, IID_PPV_ARGS(device.ReleaseAndGetAddressOf())), "Failed to create ID3D12Device!\n");
 
     ThrowIfFailed(device.As(&m_Device), "Failed to cast ID3D12Device to ID3D12Device5!\n");
-    m_Device.Get()->SetName(L"D3DDevice");
+    m_Device.Get()->SetName(L"D3D12 Device");
 
 #if defined (_DEBUG) || (DEBUG)
-    ComPtr<IDXGIDebug> dxgiDebug;
+    ComPtr<IDXGIDebug1> dxgiDebug;
     ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
     dxgiDebug->ReportLiveObjects(DXGI_DEBUG_DX, DXGI_DEBUG_RLO_SUMMARY);
+    dxgiDebug.Get()->DisableLeakTrackingForThread();
+
+    SAFE_RELEASE(dxgiDebug);
 #endif
+
+    SAFE_RELEASE(adapter);
 
     // Check for Raytracing support
     // Mendatory
     bRaytracingSupport = CheckRaytracingSupport(m_Adapter.Get());
     assert(bRaytracingSupport);
+
 }
 
 void DeviceContext::CreateDescriptorHeaps()
 {
+    // Render Target
     D3D12_DESCRIPTOR_HEAP_DESC desc{};
+    desc.NumDescriptors = FRAME_COUNT;
+    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    desc.NodeMask = 0;
+    ThrowIfFailed(m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_RenderTargetHeap.ReleaseAndGetAddressOf())));
+
+    m_RenderTargetHeapDescriptorSize = m_Device.Get()->GetDescriptorHandleIncrementSize(desc.Type);
+
+    // SRV
+    //D3D12_DESCRIPTOR_HEAP_DESC desc{};
     desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     desc.NumDescriptors = 4096;
@@ -172,21 +195,12 @@ void DeviceContext::CreateSwapChain()
 
 void DeviceContext::CreateBackbuffers()
 {
-    D3D12_DESCRIPTOR_HEAP_DESC desc{};
-    desc.NumDescriptors = FRAME_COUNT;
-    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    desc.NodeMask = 0;
-
-    ThrowIfFailed(m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_RenderTargetHeap.ReleaseAndGetAddressOf())));
-
-    m_RenderTargetHeapDescriptorSize = m_Device.Get()->GetDescriptorHandleIncrementSize(desc.Type);
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RenderTargetHeap.Get()->GetCPUDescriptorHandleForHeapStart());
 
     for (uint32_t i = 0; i < FRAME_COUNT; i++)
     {
-        ThrowIfFailed(m_SwapChain.Get()->GetBuffer(i, IID_PPV_ARGS(m_RenderTargets.at(i).GetAddressOf())));
-        m_Device.Get()->CreateRenderTargetView(m_RenderTargets[i].Get(), nullptr, rtvHandle);
+        ThrowIfFailed(m_SwapChain.Get()->GetBuffer(i, IID_PPV_ARGS(m_RenderTargets.at(i).ReleaseAndGetAddressOf())));
+        m_Device.Get()->CreateRenderTargetView(m_RenderTargets.at(i).Get(), nullptr, rtvHandle);
 
         rtvHandle.Offset(1, m_RenderTargetHeapDescriptorSize);
     }
@@ -279,6 +293,18 @@ void DeviceContext::ExecuteCommandLists()
     WaitForGPU();
 }
 
+void DeviceContext::ExecuteCommandLists(bool bResetAllocator)
+{
+    ThrowIfFailed(m_CommandList.Get()->Close(), "Failed to close ID3D12GraphicsCommandList!");
+    std::array<ID3D12CommandList*, 1> ppCommandLists{ m_CommandList.Get() };
+    GetCommandQueue()->ExecuteCommandLists(static_cast<uint32_t>(ppCommandLists.size()), ppCommandLists.data());
+
+    if (bResetAllocator)
+        ThrowIfFailed(GetCommandList()->Reset(GetCommandAllocator(), nullptr));
+
+    WaitForGPU();
+}
+
 void DeviceContext::FlushGPU()
 {
     for (uint32_t i = 0; i < FRAME_COUNT; i++)
@@ -345,14 +371,17 @@ void DeviceContext::ClearRenderTarget()
 
 void DeviceContext::ReleaseRenderTargets()
 {
-    for (auto& target : m_RenderTargets)
+    for (size_t i = 0; i < FRAME_COUNT; i++)
     {
-        target->Release();
+        m_RenderTargets.at(i).Reset();
+        m_FenceValues.at(i) = m_FenceValues.at(FRAME_INDEX);
     }
 }
 
 void DeviceContext::OnResize()
 {
+    WaitForGPU();
+
     if (!m_Device.Get() || !m_SwapChain.Get() || !GetCommandAllocator())
         throw std::exception();
 
@@ -362,14 +391,14 @@ void DeviceContext::OnResize()
     ReleaseRenderTargets();
 
     if (m_DepthStencil.Get())
-        m_DepthStencil->Release();
+        m_DepthStencil.Reset();
 
     const HRESULT hResult{ m_SwapChain.Get()->ResizeBuffers(DeviceContext::FRAME_COUNT,
                                                 static_cast<uint32_t>(Window::Resolution().Width),
                                                 static_cast<uint32_t>(Window::Resolution().Height),
                                                 DXGI_FORMAT_R8G8B8A8_UNORM, 0) };
 
-    if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET)
+    if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET || FAILED(hResult))
     {
         ::OutputDebugStringA("Device removed!\n");
         throw std::exception();
@@ -381,7 +410,6 @@ void DeviceContext::OnResize()
     CreateBackbuffers();
     CreateDepthStencil();
 
-    ExecuteCommandLists();
 }
 
 void DeviceContext::Release()
@@ -404,6 +432,14 @@ void DeviceContext::Release()
     SAFE_RELEASE(m_Device);
     SAFE_RELEASE(m_Adapter);
     SAFE_RELEASE(m_Factory);
+}
+
+uint32_t DeviceContext::QueryAdapterMemory()
+{
+    DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo{};
+    AdapterInfo::Adapter.Get()->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &memoryInfo);
+
+    return static_cast<uint32_t>(memoryInfo.CurrentUsage / 1024 / 1024);
 }
 
 ID3D12CommandAllocator* DeviceContext::GetCommandAllocator(uint32_t Index) const

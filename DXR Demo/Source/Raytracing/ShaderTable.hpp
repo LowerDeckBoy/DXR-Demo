@@ -1,8 +1,8 @@
 #pragma once
 #include <d3d12.h>
-#include <wrl.h>
 #include <vector>
 #include <string>
+#include <wrl/client.h>
 
 
 class TableRecord
@@ -39,6 +39,7 @@ public:
 
 	inline uint32_t GetShaderRecordSize() const noexcept { return m_ShaderRecordSize; }
 	inline ID3D12Resource* GetStorage() const noexcept { return m_Storage.Get(); }
+	inline const D3D12_GPU_VIRTUAL_ADDRESS GetAddressOf() const { return m_Storage.Get()->GetGPUVirtualAddress(); }
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_Storage;

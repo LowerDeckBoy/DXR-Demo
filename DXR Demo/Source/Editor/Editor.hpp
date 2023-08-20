@@ -1,7 +1,7 @@
 #pragma once
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_win32.h>
-#include <imgui/imgui_impl_dx12.h>
+#include <imgui.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
 
 class DeviceContext;
 class Camera;
@@ -18,9 +18,6 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
-	void OnResize();
-
-
 private:
 	// Seperate Heap for GUI usage
 	// Gets the job done as along as 
@@ -35,4 +32,3 @@ private:
 	ImFont* m_Font{ nullptr };
 
 };
-

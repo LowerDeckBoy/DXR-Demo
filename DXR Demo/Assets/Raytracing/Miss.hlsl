@@ -1,7 +1,7 @@
 #ifndef MISS_HLSL
 #define MISS_HLSL
 
-#include "Common.hlsl"
+#include "Common.hlsli"
 
 [shader("miss")]
 void Miss(inout HitInfo payload : SV_RayPayload)

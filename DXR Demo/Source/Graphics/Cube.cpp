@@ -46,7 +46,7 @@ void Cube::Create(DeviceContext* pDevice)
 	m_ConstBuffer.Create(pDevice, &m_cbData);
 	
 	// Normal
-	std::vector<uint32_t> indices =
+	std::array<uint32_t, 36> indices =
 	{
 		3,1,0,
 		2,1,3,
@@ -109,7 +109,7 @@ void Cube::Create(DeviceContext* pDevice)
 
 }
 
-void Cube::Draw(DirectX::XMMATRIX ViewProjection)
+void Cube::Draw(const DirectX::XMMATRIX& ViewProjection)
 {
 	m_Device->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_Device->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBuffer.View);
