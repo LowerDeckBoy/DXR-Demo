@@ -75,31 +75,7 @@
     <ClInclude Include="Source\Graphics\Plane.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imgui.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imgui_impl_dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imgui_impl_win32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Editor\Editor.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imconfig.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imgui_internal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imstb_textedit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imstb_rectpack.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="3rd-party\imgui\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="3rd-party\D3D12MA\D3D12MemAlloc.h">
@@ -112,6 +88,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Graphics\Buffer\BufferUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Graphics\Texture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Utilities\FileUtils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -158,28 +140,7 @@
     <ClCompile Include="Source\Graphics\Plane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui_impl_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui_impl_win32.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Editor\Editor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui_demo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui_draw.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui_tables.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="3rd-party\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="3rd-party\D3D12MA\D3D12MemAlloc.cpp">
@@ -191,16 +152,29 @@
     <ClCompile Include="Source\Graphics\Buffer\BufferUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Graphics\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\Shaders\Global_Vertex.hlsl" />
     <FxCompile Include="Assets\Shaders\Global_Pixel.hlsl" />
     <FxCompile Include="Assets\Shaders\Vertex_Triangle.hlsl" />
     <FxCompile Include="Assets\Shaders\Pixel_Triangle.hlsl" />
-    <FxCompile Include="Assets\Raytracing\Common.hlsl" />
+    <FxCompile Include="Assets\Shaders\Model_Vertex.hlsl" />
+    <FxCompile Include="Assets\Shaders\Model_Pixel.hlsl" />
+    <FxCompile Include="Assets\Raytracing\ClosestHit.hlsl" />
+    <FxCompile Include="Assets\Raytracing\Common.hlsli" />
+    <FxCompile Include="Assets\Raytracing\HitCommon.hlsli" />
     <FxCompile Include="Assets\Raytracing\RayGen.hlsl" />
     <FxCompile Include="Assets\Raytracing\Miss.hlsl" />
     <FxCompile Include="Assets\Raytracing\Hit.hlsl" />
-    <FxCompile Include="Assets\Raytracing\Hit_3D.hlsl" />
+    <FxCompile Include="Assets\Raytracing\ShadowRay.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="Assets\Fonts\CaskaydiaCoveNerdFontMono-Bold.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="imgui.ini" />
   </ItemGroup>
 </Project>

@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+/DXR Demo/Assets/Fonts/
+/DXR Demo/Assets/glTF/
+/vcpkg_installed/
