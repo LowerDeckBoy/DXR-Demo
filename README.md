@@ -17,5 +17,5 @@ R - reset camera position and rotation<br>
 Esc - exit<br>
 
 ###
-![Screenshot](screenshots/101_triangle_rays.png)
-![Screenshot](screenshots/101_cube_rays.png)
+![Screenshot](screenshots/cube.png)
+
