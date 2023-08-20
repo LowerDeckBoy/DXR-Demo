@@ -46,6 +46,7 @@ public:
 	bool CheckRaytracingSupport(IDXGIAdapter1* pAdapter);
 
 	void ExecuteCommandLists();
+	void ExecuteCommandLists(bool bResetAllocator);
 
 	void FlushGPU();
 	void MoveToNextFrame();

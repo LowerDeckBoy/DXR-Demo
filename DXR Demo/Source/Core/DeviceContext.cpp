@@ -29,9 +29,9 @@ void DeviceContext::Create()
     CreateFence();
 
     CreateSwapChain();
+    CreateDescriptorHeaps();
     CreateBackbuffers();
 
-    CreateDescriptorHeaps();
     //CreateDepthStencil();
 }
 
@@ -90,23 +90,40 @@ void DeviceContext::CreateDevice()
     ThrowIfFailed(D3D12CreateDevice(m_Adapter.Get(), m_FeatureLevel, IID_PPV_ARGS(device.ReleaseAndGetAddressOf())), "Failed to create ID3D12Device!\n");
 
     ThrowIfFailed(device.As(&m_Device), "Failed to cast ID3D12Device to ID3D12Device5!\n");
-    m_Device.Get()->SetName(L"D3DDevice");
+    m_Device.Get()->SetName(L"D3D12 Device");
 
 #if defined (_DEBUG) || (DEBUG)
-    ComPtr<IDXGIDebug> dxgiDebug;
+    ComPtr<IDXGIDebug1> dxgiDebug;
     ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
     dxgiDebug->ReportLiveObjects(DXGI_DEBUG_DX, DXGI_DEBUG_RLO_SUMMARY);
+    dxgiDebug.Get()->DisableLeakTrackingForThread();
+
+    SAFE_RELEASE(dxgiDebug);
 #endif
+
+    SAFE_RELEASE(adapter);
 
     // Check for Raytracing support
     // Mendatory
     bRaytracingSupport = CheckRaytracingSupport(m_Adapter.Get());
     assert(bRaytracingSupport);
+
 }
 
 void DeviceContext::CreateDescriptorHeaps()
 {
+    // Render Target
     D3D12_DESCRIPTOR_HEAP_DESC desc{};
+    desc.NumDescriptors = FRAME_COUNT;
+    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    desc.NodeMask = 0;
+    ThrowIfFailed(m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_RenderTargetHeap.ReleaseAndGetAddressOf())));
+
+    m_RenderTargetHeapDescriptorSize = m_Device.Get()->GetDescriptorHandleIncrementSize(desc.Type);
+
+    // SRV
+    //D3D12_DESCRIPTOR_HEAP_DESC desc{};
     desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     desc.NumDescriptors = 4096;
@@ -178,21 +195,12 @@ void DeviceContext::CreateSwapChain()
 
 void DeviceContext::CreateBackbuffers()
 {
-    D3D12_DESCRIPTOR_HEAP_DESC desc{};
-    desc.NumDescriptors = FRAME_COUNT;
-    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    desc.NodeMask = 0;
-
-    ThrowIfFailed(m_Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_RenderTargetHeap.ReleaseAndGetAddressOf())));
-
-    m_RenderTargetHeapDescriptorSize = m_Device.Get()->GetDescriptorHandleIncrementSize(desc.Type);
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RenderTargetHeap.Get()->GetCPUDescriptorHandleForHeapStart());
 
     for (uint32_t i = 0; i < FRAME_COUNT; i++)
     {
-        ThrowIfFailed(m_SwapChain.Get()->GetBuffer(i, IID_PPV_ARGS(m_RenderTargets.at(i).GetAddressOf())));
-        m_Device.Get()->CreateRenderTargetView(m_RenderTargets[i].Get(), nullptr, rtvHandle);
+        ThrowIfFailed(m_SwapChain.Get()->GetBuffer(i, IID_PPV_ARGS(m_RenderTargets.at(i).ReleaseAndGetAddressOf())));
+        m_Device.Get()->CreateRenderTargetView(m_RenderTargets.at(i).Get(), nullptr, rtvHandle);
 
         rtvHandle.Offset(1, m_RenderTargetHeapDescriptorSize);
     }
@@ -281,6 +289,18 @@ void DeviceContext::ExecuteCommandLists()
 
     ID3D12CommandList* ppCommandLists[] = { m_CommandList.Get() };
     m_CommandQueue.Get()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    WaitForGPU();
+}
+
+void DeviceContext::ExecuteCommandLists(bool bResetAllocator)
+{
+    ThrowIfFailed(m_CommandList.Get()->Close(), "Failed to close ID3D12GraphicsCommandList!");
+    std::array<ID3D12CommandList*, 1> ppCommandLists{ m_CommandList.Get() };
+    GetCommandQueue()->ExecuteCommandLists(static_cast<uint32_t>(ppCommandLists.size()), ppCommandLists.data());
+
+    if (bResetAllocator)
+        ThrowIfFailed(GetCommandList()->Reset(GetCommandAllocator(), nullptr));
 
     WaitForGPU();
 }
@@ -378,7 +398,7 @@ void DeviceContext::OnResize()
                                                 static_cast<uint32_t>(Window::Resolution().Height),
                                                 DXGI_FORMAT_R8G8B8A8_UNORM, 0) };
 
-    if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET)
+    if (hResult == DXGI_ERROR_DEVICE_REMOVED || hResult == DXGI_ERROR_DEVICE_RESET || FAILED(hResult))
     {
         ::OutputDebugStringA("Device removed!\n");
         throw std::exception();
@@ -390,7 +410,6 @@ void DeviceContext::OnResize()
     CreateBackbuffers();
     CreateDepthStencil();
 
-    //ExecuteCommandLists();
 }
 
 void DeviceContext::Release()
