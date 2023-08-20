@@ -10,18 +10,21 @@ class IndexBuffer;
 class Plane
 {
 public:
-	Plane();
+	Plane() {}
+	Plane(DeviceContext* pDevice);
 	~Plane();
 
 	void Create(DeviceContext* pDevice);
-	void Draw(DirectX::XMMATRIX ViewProjection);
+	void Draw(const DirectX::XMMATRIX& ViewProjection);
 
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndexBuffer;
+
+	ConstantBuffer<cbPerObject> m_ConstBuffer;
+
 private:
 	DeviceContext* m_DeviceCtx{ nullptr };
 
-	ConstantBuffer<cbPerObject> m_ConstBuffer;
 	cbPerObject m_cbData{};
 
 };
