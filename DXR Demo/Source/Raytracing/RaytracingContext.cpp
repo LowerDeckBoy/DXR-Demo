@@ -14,68 +14,14 @@ const wchar_t* RaytracingContext::m_RayGenShaderName		= L"RayGen";
 const wchar_t* RaytracingContext::m_MissShaderName			= L"Miss";
 const wchar_t* RaytracingContext::m_ClosestHitShaderName	= L"ClosestHit";
 
-/*
-RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, VertexBuffer& Vertex, IndexBuffer& Index) 
-	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffer(Vertex), m_IndexBuffer(Index), m_VertexBuffers()
-{
-	{
-		//m_DeviceCtx = pDeviceCtx;
-		//assert(m_DeviceCtx);
-		//m_ShaderManager = pShaderManager;
-		//m_Camera = pCamera;
-
-		//m_VertexBuffer = Vertex;
-		//m_IndexBuffer = Index;
-	}
-	m_VertexBuffers = {};
-	m_IndexBuffers = {};
-	Create();
-}
-*/
-
 RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index)
 	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffers(Vertex), m_IndexBuffers(Index)
 {
-	//for (size_t i = 0; i < Vertex.size(); i++)
-	//{
-	//	m_VertexBuffers.emplace_back(Vertex.at(i));
-	//	m_IndexBuffers.emplace_back(Index.at(i));
-	//}
-
 	Create();
 }
 
-/*
-RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index)
-	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffers(Vertex), m_IndexBuffers(Index)
-{
-	{
-		//assert(m_DeviceCtx = pDeviceCtx);
-		//assert(m_ShaderManager = pShaderManager);
-		//assert(m_Camera = pCamera);
-		//
-		//m_VertexBuffers = Vertex;
-		//m_IndexBuffers  = Index;
-	}
-
-	Create();
-
-}
-*/
 RaytracingContext::~RaytracingContext() noexcept(false)
 {
-	//m_VertexBuffer.Buffer.Release();
-	//m_IndexBuffer.Buffer.Release();
-
-	//for (auto& vertex : m_VertexBuffers)
-	//{
-	//	vertex.Buffer.Release();
-	//}
-	//
-	//for (auto& index : m_IndexBuffers)
-	//{
-	//	index.Buffer.Release();
-	//}
 
 	SAFE_RELEASE(m_GlobalRootSignature);
 	SAFE_RELEASE(m_LocalRootSignature);
@@ -424,14 +370,11 @@ void RaytracingContext::BuildAccelerationStructures()
 	m_AS.Init(m_DeviceCtx);
 
 	DirectX::XMMATRIX matrix{ DirectX::XMMatrixIdentity() };
-	//m_AS.CreateBottomLevels(m_VertexBuffer, m_IndexBuffer, true);
-	//m_AS.CreateTopLevel(m_AS.m_BottomLevel.m_ResultBuffer.Get(), matrix);
 	m_AS.CreateBottomLevels(m_VertexBuffers, m_IndexBuffers, true);
 	m_AS.CreateTopLevel();
-	//m_AS.CreateBottomLevel(m_VertexBuffers, m_IndexBuffers, true);
-	//m_AS.CreateTopLevel(m_AS.m_BottomLevels, matrix);
 
 	// Perhaps unnecessary for now
+	m_DeviceCtx->ExecuteCommandLists(true);
 	m_DeviceCtx->WaitForGPU();
 	m_DeviceCtx->FlushGPU();
 

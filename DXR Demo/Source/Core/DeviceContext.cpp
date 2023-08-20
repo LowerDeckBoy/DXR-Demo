@@ -101,13 +101,13 @@ void DeviceContext::CreateDevice()
     SAFE_RELEASE(dxgiDebug);
 #endif
 
-    SAFE_RELEASE(adapter);
-
     // Check for Raytracing support
     // Mendatory
     bRaytracingSupport = CheckRaytracingSupport(m_Adapter.Get());
-    assert(bRaytracingSupport);
+    assert(bRaytracingSupport && "Raytracing not supported on current GPU or failed to check RT support!");
 
+    SAFE_RELEASE(adapter);
+    SAFE_RELEASE(device);
 }
 
 void DeviceContext::CreateDescriptorHeaps()
@@ -268,7 +268,7 @@ void DeviceContext::SetViewport()
 
 bool DeviceContext::CheckRaytracingSupport(IDXGIAdapter1* pAdapter)
 {
-    ComPtr<ID3D12Device> device;
+    ComPtr<ID3D12Device5> device;
     D3D12_FEATURE_DATA_D3D12_OPTIONS5 features{};
 
     if (SUCCEEDED(D3D12CreateDevice(pAdapter, m_FeatureLevel, IID_PPV_ARGS(device.ReleaseAndGetAddressOf()))))

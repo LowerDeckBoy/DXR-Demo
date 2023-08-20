@@ -179,7 +179,6 @@
     <ClInclude Include="Source\Utilities\MemoryUsage.hpp" />
     <ClInclude Include="Source\Utilities\Timer.hpp" />
     <ClInclude Include="Source\Utilities\Utilities.hpp" />
-    <ClInclude Include="Source\Graphics\Texture.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="3rd-party\D3D12MA\D3D12MemAlloc.cpp" />
@@ -200,7 +199,6 @@
     <ClCompile Include="Source\Graphics\Shader.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Rendering\Camera.cpp" />
-    <ClCompile Include="Source\Graphics\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\Raytracing\ClosestHit.hlsl">
