@@ -23,6 +23,12 @@ struct SimpleVertex
 	DirectX::XMFLOAT4 Color;
 };
 
+struct VertexNormal
+{
+	DirectX::XMFLOAT3 Positon;
+	DirectX::XMFLOAT3 Normal;
+};
+
 struct SkyboxVertex
 {
 	DirectX::XMFLOAT3 Position;
