@@ -3,33 +3,20 @@
 #include "../../Utilities/Utilities.hpp"
 
 
-void Buffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+Buffer::~Buffer()
+{
+	//Release();
+}
+
+void Buffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc, BufferType TypeOf)
 {
 	m_BufferData = Data;
 
 	const auto heapDesc{ CD3DX12_RESOURCE_DESC::Buffer(Data.Size) };
 
-	D3D12MA::Allocation* allocation{ nullptr };
-	D3D12MA::ALLOCATION_DESC allocDesc{};
-	allocDesc.Flags = D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_COMMITTED | D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
-	allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-	//allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
-	pDevice->GetAllocator()->CreateResource(&allocDesc, &heapDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, &allocation, IID_PPV_ARGS(m_Buffer.ReleaseAndGetAddressOf()));
-
-	//allocDesc.Flags = D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_COMMITTED | D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
-	//allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-	//D3D12MA::Allocation* allocationUpload{ nullptr };
-	//ID3D12Resource* uploadBuffer{ nullptr };
-	//pDevice->GetAllocator()->CreateResource(&allocDesc, &heapDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &allocationUpload, IID_PPV_ARGS(&uploadBuffer));
-
-	//D3D12_SUBRESOURCE_DATA subresource{};
-	//subresource.pData = Data.pData;
-	//subresource.RowPitch = Data.Size;
-	//subresource.SlicePitch = Data.Size;
-	//UpdateSubresources(pDevice->GetCommandList(), m_Buffer.Get(), uploadBuffer, 0, 0, 1, &subresource);
-
-	//auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(m_Buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON) };
-	//pDevice->GetCommandList()->ResourceBarrier(1, &barrier);
+	D3D12_RESOURCE_DESC desc{};
+	const auto heapProps{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
+	ThrowIfFailed(pDevice->GetDevice()->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &heapDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_Buffer.ReleaseAndGetAddressOf())));
 
 	MapMemory();
 
@@ -45,10 +32,6 @@ void Buffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
 	srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 	pDevice->GetDevice()->CreateShaderResourceView(m_Buffer.Get(), &srvDesc, m_Descriptor.GetCPU());
 
-	//allocation->Release();
-	//allocationUpload->Release();
-	allocation->Release();
-	//uploadBuffer = nullptr;
 }
 
 void Buffer::MapMemory()
@@ -60,3 +43,55 @@ void Buffer::MapMemory()
 	m_Buffer.Get()->Unmap(0, nullptr);
 }
 
+void Buffer::Release()
+{
+	SAFE_RELEASE(m_Buffer);
+}
+
+VertexBuffer::VertexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+{
+	Buffer::Create(pDevice, Data, Desc, BufferType::eVertex);
+	SetView();
+}
+
+VertexBuffer::~VertexBuffer()
+{
+	Buffer::Release();
+}
+
+void VertexBuffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+{
+	Buffer::Create(pDevice, Data, Desc, BufferType::eVertex);
+	SetView();
+}
+
+void VertexBuffer::SetView()
+{
+	View.BufferLocation = Buffer::GetGPUAddress();
+	View.SizeInBytes = static_cast<uint32_t>(Buffer::GetData().Size);
+	View.StrideInBytes = static_cast<uint32_t>(Buffer::GetData().Size) / Buffer::GetData().ElementsCount;
+}
+
+IndexBuffer::IndexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+{
+	Buffer::Create(pDevice, Data, Desc, BufferType::eIndex);
+	SetView();
+}
+
+IndexBuffer::~IndexBuffer()
+{
+	Buffer::Release();
+}
+
+bool IndexBuffer::IsR32bits()
+{
+	return Buffer::GetData().ElementsCount > UINT16_MAX;
+}
+
+void IndexBuffer::SetView()
+{
+	View.BufferLocation = Buffer::GetGPUAddress();
+	View.Format = DXGI_FORMAT_R32_UINT;
+	View.SizeInBytes = static_cast<uint32_t>(Buffer::GetData().Size);
+	Count = Buffer::GetData().ElementsCount;
+}
