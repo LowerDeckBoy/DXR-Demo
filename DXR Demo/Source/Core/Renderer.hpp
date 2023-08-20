@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-//#include <array>
 #include <vector>
 
 #include "DeviceContext.hpp"
@@ -29,9 +28,10 @@ public:
 	void Update(Camera* pCamera);
 	void Render(Camera* pCamera);
 	void OnResize();
-	void Destroy();
+	void Release();
 	
-	bool bRaster{ true };
+	bool bRaster{ false };
+	static bool bVSync;
 private:
 	std::unique_ptr<DeviceContext> m_DeviceCtx;
 
@@ -49,17 +49,16 @@ private:
 
 	std::unique_ptr<Editor> m_Editor;
 
-	//
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	ComPtr<ID3D12PipelineState> m_PipelineState;
 
 	std::shared_ptr<ShaderManager> m_ShaderManager;
 	// Shaders
-	Shader m_VertexShader;
-	Shader m_PixelShader;
+	ComPtr<IDxcBlob> m_VertexShader;
+	ComPtr<IDxcBlob> m_PixelShader;
 
-	Cube m_Cube;
-	Plane m_Plane;
+	Cube* m_Cube{ nullptr };
+	Plane* m_Plane{ nullptr };
 
 	// Raytracing
 	std::unique_ptr<RaytracingContext> m_RaytracingContext;
