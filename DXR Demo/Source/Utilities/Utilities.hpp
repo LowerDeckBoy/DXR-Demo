@@ -6,7 +6,10 @@
 #include <string_view>
 #include <cassert>
 
+// For ComPtr
 #define SAFE_RELEASE(x) { if (x) { x.Reset(); x = nullptr; } }
+// For non ComPtr
+#define SAFE_DELETE(x) { if (x) { x->Release(); x = nullptr; } }
 
 inline void ThrowIfFailed(HRESULT hResult)
 {
