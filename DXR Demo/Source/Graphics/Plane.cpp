@@ -40,7 +40,12 @@ void Plane::Draw(const DirectX::XMMATRIX& ViewProjection)
 	m_DeviceCtx->GetCommandList()->IASetIndexBuffer(&m_IndexBuffer.View);
 
 	const auto frameIndex{ m_DeviceCtx->FRAME_INDEX };
-	m_ConstBuffer.Update({ XMMatrixTranspose(DirectX::XMMatrixIdentity() * ViewProjection), DirectX::XMMatrixIdentity() }, frameIndex);
+
+	m_WorldMatrix = XMMatrixIdentity();
+	m_ScaleMatrix = XMMatrixScaling(1.0f, 1.0f, 1.0f);
+	m_WorldMatrix = m_ScaleMatrix;
+
+	m_ConstBuffer.Update({ XMMatrixTranspose(m_WorldMatrix * ViewProjection), m_WorldMatrix }, frameIndex);
 	m_DeviceCtx->GetCommandList()->SetGraphicsRootConstantBufferView(0, m_ConstBuffer.GetBuffer(frameIndex)->GetGPUVirtualAddress());
 
 	m_DeviceCtx->GetCommandList()->DrawIndexedInstanced(m_IndexBuffer.Count, 1, 0, 0, 0);

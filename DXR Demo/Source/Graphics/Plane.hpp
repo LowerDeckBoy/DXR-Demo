@@ -27,4 +27,7 @@ private:
 
 	cbPerObject m_cbData{};
 
+	DirectX::XMMATRIX m_WorldMatrix{ XMMatrixIdentity() };
+	DirectX::XMMATRIX m_ScaleMatrix{ XMMatrixIdentity() };
+
 };

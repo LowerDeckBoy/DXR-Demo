@@ -45,7 +45,6 @@ void Cube::Create(DeviceContext* pDevice)
 	*/
 	m_ConstBuffer.Create(pDevice, &m_cbData);
 	
-	// Normal
 	std::array<uint32_t, 36> indices =
 	{
 		3,1,0,
@@ -68,7 +67,7 @@ void Cube::Create(DeviceContext* pDevice)
 	};
 
 	// Cube vertices positions and corresponding triangle normals.
-	std::vector<CubeNormal> vertices =
+	std::vector<VertexNormal> vertices =
 	{
 		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
 		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
@@ -103,7 +102,7 @@ void Cube::Create(DeviceContext* pDevice)
 	
 	// Create Buffers
 	{
-		m_VertexBuffer.Create(m_Device, BufferData(vertices.data(), vertices.size(), sizeof(vertices.at(0)) * vertices.size(), sizeof(CubeNormal)), BufferDesc());
+		m_VertexBuffer.Create(m_Device, BufferData(vertices.data(), vertices.size(), sizeof(vertices.at(0)) * vertices.size(), sizeof(vertices.at(0))), BufferDesc());
 		m_IndexBuffer.Create(m_Device, BufferData(indices.data(), indices.size(), indices.size() * sizeof(uint32_t), sizeof(uint32_t)), BufferDesc());
 	}
 
@@ -116,7 +115,7 @@ void Cube::Draw(const DirectX::XMMATRIX& ViewProjection)
 	m_Device->GetCommandList()->IASetIndexBuffer(&m_IndexBuffer.View);
 
 	auto frameIndex{ m_Device->FRAME_INDEX };
-	m_ConstBuffer.Update({ XMMatrixTranspose(DirectX::XMMatrixIdentity() * ViewProjection), DirectX::XMMatrixIdentity() }, frameIndex);
+	m_ConstBuffer.Update({ XMMatrixTranspose(m_WorldMatrix * m_Translation *ViewProjection), DirectX::XMMatrixIdentity() }, frameIndex);
 	m_Device->GetCommandList()->SetGraphicsRootConstantBufferView(0, m_ConstBuffer.GetBuffer(frameIndex)->GetGPUVirtualAddress());
 
 	m_Device->GetCommandList()->DrawIndexedInstanced(m_IndexBuffer.Count, 1, 0, 0, 0);
@@ -126,6 +125,5 @@ void Cube::Release()
 {
 	if (m_Device)
 		m_Device = nullptr;
-	//delete m_Vertices;
-	//delete m_Indices;
+
 }
