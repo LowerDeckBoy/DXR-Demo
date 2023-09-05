@@ -3,12 +3,13 @@
 Demo done for learning DirectX Raytracing purposes
 
 Built with:
-C++ 20,
-Visual Studio 2022,
-DirectX 12 with DXR
-<br><br>
-DLLs to create and serialize HLSL model 6.x shaders are provided with Post-Build copy event
-
+<ul>
+<li>C++ 20</li>
+<li>Visual Studio 2022 - MSVC, Windows SDK, Win3 API</li>
+<li>DirectX 12 with DXR</li>
+</ul>
+DLLs to create and serialize HLSL model 6.x shaders are provided alongside Post-Build copy event<br>
+<br>
 Controls:<br>
 Hold RMB to control camera rotation <br>
 WSAD - to move<br>
@@ -17,5 +18,5 @@ R - reset camera position and rotation<br>
 Esc - exit<br>
 
 ###
-![Screenshot](screenshots/cube.png)
+![Screenshot](screenshots/101_simple_shadows.png)
 
