@@ -3,16 +3,19 @@
 #include "../Graphics/Buffer/BufferUtils.hpp"
 #include <d3dx12.h>
 
-
+// Note: Starting address of Shader Table must be aligned to 64 bytes
+// D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT == 64 bytes
 inline constexpr uint32_t ALIGN(uint32_t Size, uint32_t Alignment)
 {
-	return (Size + (Alignment + 1)) & ~(Alignment - 1);
+	return ((Size + (Alignment + 1))) & ~(Alignment - 1);
 }
 
 TableRecord::TableRecord(void* pIdentifier, uint32_t Size) noexcept
 {
 	m_Identifier.pData = pIdentifier;
 	m_Identifier.Size = Size;
+
+	TotalSize += Size;
 }
 
 TableRecord::TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs, uint32_t ArgsSize) noexcept
@@ -21,21 +24,26 @@ TableRecord::TableRecord(void* pIdentifier, uint32_t Size, void* pLocalRootArgs,
 	m_Identifier.Size = Size;
 	m_LocalRootArgs.pData = pLocalRootArgs;
 	m_LocalRootArgs.Size = ArgsSize;
+
+	TotalSize += Size + ArgsSize;
 }
 
 void TableRecord::CopyTo(void* pDestination) noexcept
 {
 	uint8_t* pByteDestination{ static_cast<uint8_t*>(pDestination) };
-	//uint8_t* pByteDestination{ reinterpret_cast<uint8_t*>(pDestination) };
 	std::memcpy(pByteDestination, m_Identifier.pData, m_Identifier.Size);
 	if (m_LocalRootArgs.pData != nullptr)
 		std::memcpy(pByteDestination + m_Identifier.Size, m_LocalRootArgs.pData, m_LocalRootArgs.Size);
 }
 
-
-void ShaderTable::Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, std::wstring DebugName)
+ShaderTable::~ShaderTable()
 {
-	m_ShaderRecordSize = ALIGN(ShaderRecordSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+	Release();
+}
+
+void ShaderTable::Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, const std::wstring& DebugName)
+{
+	m_ShaderRecordSize = ALIGN(ShaderRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 	m_Records.reserve(NumShaderRecord);
 
 	const uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
@@ -51,12 +59,45 @@ void ShaderTable::AddRecord(TableRecord& Record)
 {
 	m_Records.push_back(Record);
 	Record.CopyTo(m_MappedData);
+	//m_MappedData += ALIGN(m_ShaderRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 	m_MappedData += m_ShaderRecordSize;
+
+}
+
+void ShaderTable::SetStride(uint32_t Stride)
+{
+	m_Stride = Stride;
+}
+
+void ShaderTable::CheckAlignment()
+{
+	uint32_t max = std::max({ m_Records.data()->TotalSize });
+
+	for (auto& record : m_Records)
+		record.TotalSize = max;
+		//record.TotalSize = ALIGN(max, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+
+	m_Stride = ALIGN(max, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+
+	m_Storage->Unmap(0, nullptr);
 }
 
 void ShaderTable::SetTableName(std::wstring Name)
 {
 	m_Storage.Get()->SetName(Name.c_str());
+}
+
+void ShaderTable::Release()
+{
+	SAFE_RELEASE(m_Storage);
+
+	m_Records.clear();
+
+	if (m_MappedData)
+	{
+		m_MappedData = nullptr;
+		delete m_MappedData;
+	}
 }
 
 /*
@@ -168,5 +209,3 @@ uint32_t ShaderTableBuilder::CopyShaderData(ID3D12StateObjectProperties* pRaytra
 }
 
 */
-
-

@@ -54,30 +54,7 @@ void BottomLevel::AddBuffers(VertexBuffer Vertex, IndexBuffer Index, bool bOpaqu
 
 	m_Buffers.emplace_back(desc);
 }
-/*
-void BottomLevel::AddBuffers(std::vector<VertexBuffer> Vertices, std::vector<IndexBuffer> Indices, bool bOpaque)
-{
-	for (size_t i = 0; i < Vertices.size(); i++)
-	{
-		D3D12_RAYTRACING_GEOMETRY_DESC desc{};
-		desc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-		desc.Flags = (bOpaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE);
 
-		desc.Triangles.VertexBuffer.StartAddress = Vertices.at(i).View.BufferLocation;
-		desc.Triangles.VertexBuffer.StrideInBytes = Vertices.at(i).View.StrideInBytes;
-		desc.Triangles.VertexCount = Vertices.at(i).Buffer.GetData().ElementsCount;
-		desc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-
-		desc.Triangles.IndexBuffer = Indices.at(i).View.BufferLocation;
-		desc.Triangles.IndexCount = Indices.at(i).Count;
-		desc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
-
-		desc.Triangles.Transform3x4 = 0;
-
-		m_Buffers.emplace_back(desc);
-	}
-}
-*/
 void BottomLevel::GetBufferSizes(ID3D12Device5* pDevice, uint64_t* pScratchSize, uint64_t* pResultSize, bool bAllowUpdate)
 {
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS prebuildDesc{};
@@ -118,10 +95,8 @@ void TopLevel::Create(ID3D12GraphicsCommandList4* pCommandList, ID3D12Resource* 
 	ThrowIfFailed(pDescriptors->Map(0, nullptr, reinterpret_cast<void**>(&descs)));
 
 	if (!descs)
-	{
 		throw std::exception("Failed to cast Descriptor Buffers");
-	}
-
+	
 	for (uint32_t i = 0; i < static_cast<uint32_t>(m_Instances.size()); i++)
 	{
 		descs[i].AccelerationStructure = m_Instances.at(i)->BottomLevel->GetGPUVirtualAddress();
@@ -129,7 +104,8 @@ void TopLevel::Create(ID3D12GraphicsCommandList4* pCommandList, ID3D12Resource* 
 		std::memcpy(descs[i].Transform, &transform, sizeof(descs[i].Transform));
 		descs[i].InstanceID = m_Instances.at(i)->InstanceID;
 		descs[i].InstanceContributionToHitGroupIndex = m_Instances.at(i)->HitGroupID;
-		descs[i].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
+		//descs[i].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
+		descs[i].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 		descs[i].InstanceMask = 0xFF;
 	}
 	pDescriptors->Unmap(0, nullptr);
@@ -201,23 +177,6 @@ void TopLevel::Reset()
 	m_InstanceDescsSize = 0;
 }
 
-void AccelerationStructures::CreateBottomLevels(VertexBuffer& Vertex, IndexBuffer& Index, bool bOpaque)
-{
-	m_BottomLevel.AddBuffers(Vertex, Index, bOpaque);
-
-	uint64_t scratchSize{ 0 };
-	uint64_t resultSize	{ 0 };
-
-	m_BottomLevel.GetBufferSizes(m_Device->GetDevice(), &scratchSize, &resultSize, false);
-
-	auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
-	BufferUtils::Create(m_Device->GetDevice(), &m_BottomLevel.m_ScratchBuffer, scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, heapProperties);
-	BufferUtils::Create(m_Device->GetDevice(), &m_BottomLevel.m_ResultBuffer, resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, heapProperties);
-
-	m_BottomLevel.Create(m_Device->GetCommandList(), m_BottomLevel.m_ScratchBuffer.Get(), m_BottomLevel.m_ResultBuffer.Get());
-
-}
-
 void AccelerationStructures::CreateBottomLevels(std::vector<VertexBuffer>& VertexBuffers, std::vector<IndexBuffer>& IndexBuffers, bool bOpaque)
 {
 	for (size_t i = 0; i < VertexBuffers.size(); i++)
@@ -268,12 +227,9 @@ void AccelerationStructures::CreateTopLevel()
 	for (size_t i = 0; i < m_BottomLevels.size(); i++)
 	{
 		const auto matrix{ DirectX::XMMatrixIdentity() };
-		//m_TopLevel.AddInstance(m_BottomLevels.at(i)->m_ResultBuffer.Get(), matrix, 0, i * 2);
-		m_TopLevel.AddInstance(m_BottomLevels.at(i)->m_ResultBuffer.Get(), matrix, i, 0);
+
+		m_TopLevel.AddInstance(m_BottomLevels.at(i)->m_ResultBuffer.Get(), matrix, static_cast<uint32_t>(i), static_cast<uint32_t>(i * 2));
 	}
-	//const auto matrix{ DirectX::XMMatrixIdentity() };
-	//m_TopLevel.AddInstance(m_BottomLevels.at(0)->m_ResultBuffer.Get(), matrix, 0, 0);
-	//m_TopLevel.AddInstance(m_BottomLevels.at(1)->m_ResultBuffer.Get(), matrix, 0, 1);
 
 	uint64_t scratchSize{};
 	uint64_t resultSize{};
@@ -319,31 +275,3 @@ void AccelerationStructures::CreateTopLevel(ID3D12Resource* pBuffer, DirectX::XM
 	m_TopLevel.Create(m_Device->GetCommandList(), m_TopLevel.m_ScratchBuffer.Get(), m_TopLevel.m_ResultBuffer.Get(), m_TopLevel.m_InstanceDescsBuffer.Get());
 
 }
-/*
-void AccelerationStructures::CreateTopLevel(std::vector<BottomLevel>& pBuffers, DirectX::XMMATRIX& Matrix)
-{
-	for (size_t i = 0; i < m_BottomLevels.size(); i++)
-	{
-		auto m{ DirectX::XMMatrixIdentity() };
-		//m_TopLevel.AddInstance(pBuffers.at(i).m_ResultBuffer.Get(), m, 0, 0);
-		m_TopLevel.AddInstance(pBuffers.at(i).m_ResultBuffer.Get(), m, i, 0);
-	}
-
-	uint64_t scratchSize{};
-	uint64_t resultSize{};
-	uint64_t instancesDescSize{};
-
-	auto device{ m_Device->GetDevice() };
-	m_TopLevel.GetBufferSizes(device, &scratchSize, &resultSize, &instancesDescSize, false);
-
-	auto heapProperties{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
-	m_TopLevel.m_ScratchBuffer = BufferUtils::Create(device, scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, heapProperties);
-	m_TopLevel.m_ResultBuffer = BufferUtils::Create(device, resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, heapProperties);
-
-	heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	m_TopLevel.m_InstanceDescsBuffer = BufferUtils::Create(device, instancesDescSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, heapProperties);
-
-	m_TopLevel.Create(m_Device->GetCommandList(), m_TopLevel.m_ScratchBuffer.Get(), m_TopLevel.m_ResultBuffer.Get(), m_TopLevel.m_InstanceDescsBuffer.Get());
-	
-}
-*/

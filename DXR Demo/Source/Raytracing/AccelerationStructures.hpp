@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <DirectXMath.h>
+#include "../Graphics/Buffer/ConstantBuffer.hpp"
 #include <vector>
 #include <memory>
 
@@ -91,7 +92,6 @@ private:
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS m_Flags{ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE };
 
 };
-
 
 class AccelerationStructures
 {
