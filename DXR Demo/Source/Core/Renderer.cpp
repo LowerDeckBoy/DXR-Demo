@@ -29,8 +29,9 @@ void Renderer::Initalize(Camera* pCamera, Timer* pTimer)
 	// Pass current objects geometry data
 	std::vector<VertexBuffer> vertex{ m_Cube->m_VertexBuffer, m_Plane->m_VertexBuffer };
 	std::vector<IndexBuffer> index{ m_Cube->m_IndexBuffer, m_Plane->m_IndexBuffer };
-	
-	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index);
+	std::vector<ConstantBuffer<cbPerObject>> constants{ m_Cube->m_ConstBuffer, m_Plane->m_ConstBuffer };
+
+	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index, constants);
 
 	m_DeviceCtx->ExecuteCommandLists();
 	m_DeviceCtx->WaitForGPU();
@@ -39,7 +40,7 @@ void Renderer::Initalize(Camera* pCamera, Timer* pTimer)
 
 void Renderer::LoadAssets()
 {
-	m_Cube = new Cube(m_DeviceCtx.get());
+	m_Cube  = new Cube(m_DeviceCtx.get());
 	m_Plane = new Plane(m_DeviceCtx.get());
 
 }

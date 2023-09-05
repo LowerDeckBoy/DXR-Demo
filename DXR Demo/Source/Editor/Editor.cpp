@@ -32,10 +32,6 @@ void Editor::Initialize(DeviceContext* pDeviceCtx, Camera* pCamera, Timer* pTime
 
 	ImGuiIO& IO{ ImGui::GetIO() };
 	ImGuiStyle& Style{ ImGui::GetStyle() };
-	//IO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-	//IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
-	//IO.ConfigFlags  |= ImGuiConfigFlags_DockingEnable;
-	//IO.ConfigFlags  |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
 	Style.WindowRounding = 5.0f;
@@ -52,9 +48,6 @@ void Editor::Initialize(DeviceContext* pDeviceCtx, Camera* pCamera, Timer* pTime
 
 	constexpr float fontSize{ 15.0f };
 	m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-Bold.ttf", fontSize);
-	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/CaskaydiaCoveNerdFontMono-SemiBold.ttf", fontSize);
-	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/Roboto-Medium.ttf", fontSize);
-	//m_Font = IO.Fonts->AddFontFromFileTTF("Assets/Fonts/JetBrainsMonoNerdFontMono-Medium.ttf", fontSize);
 
 }
 
@@ -77,7 +70,7 @@ void Editor::EndFrame()
 		MemoryUsage::ReadRAM();
 		const uint32_t VRAM{ DeviceContext::QueryAdapterMemory() };
 		ImGui::Text("GPU: %s | ", AdapterInfo::AdapterName.data());
-		ImGui::Text("FPS: %d ms: %.2f | Memory: %.2f MB | VRAM: %u MB", m_Timer->m_FPS, m_Timer->m_Miliseconds, MemoryUsage::MemoryInUse, VRAM);
+		ImGui::Text("FPS: %d ms: %.3f | Memory: %.2f MB | VRAM: %u MB", m_Timer->m_FPS, m_Timer->m_Miliseconds, MemoryUsage::MemoryInUse, VRAM);
 
 		ImGui::Checkbox("VSync", &Renderer::bVSync);
 

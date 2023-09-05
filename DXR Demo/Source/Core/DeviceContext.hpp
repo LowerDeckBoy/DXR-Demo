@@ -64,8 +64,44 @@ public:
 
 	static const uint32_t FRAME_COUNT{ 3 };
 
+	// Note: Mendatory
+	inline bool RaytraceSupported() const noexcept { return bRaytracingSupport; }
+
+	/* ===========================================Getters =========================================== */
+	// Getters
+	inline IDXGIAdapter3* GetAdapter() const noexcept { return m_Adapter.Get(); }
+	inline IDXGIFactory2* GetFactory() const noexcept { return m_Factory.Get(); }
+
+	inline ID3D12Device5* GetDevice() const noexcept { return m_Device.Get(); }
+
+	inline ID3D12GraphicsCommandList4* GetCommandList() const noexcept { return m_CommandList.Get(); }
+	ID3D12CommandAllocator* GetCommandAllocator(uint32_t Index) const;
+	ID3D12CommandAllocator* GetCommandAllocator() const;
+	inline ID3D12CommandQueue* GetCommandQueue() const noexcept { return m_CommandQueue.Get(); }
+
+	inline IDXGISwapChain3* GetSwapChain() const noexcept { return m_SwapChain.Get(); }
+	inline ID3D12DescriptorHeap* GetRenderTargetHeap() const noexcept { return m_RenderTargetHeap.Get(); }
+	ID3D12Resource* GetRenderTarget() const;
+
+	inline DXGI_FORMAT GetRenderTargetFormat() const noexcept { return m_RenderTargetFormat; }
+
+	inline ID3D12Fence* GetFence() const noexcept { return m_Fence.Get(); }
+
+	inline D3D_FEATURE_LEVEL GetFeatureLevel() const noexcept { return m_FeatureLevel; }
+
+	inline D3D12_VIEWPORT GetViewport() noexcept { return m_Viewport; }
+	inline D3D12_RECT GetViewportRect() noexcept { return m_ViewportRect; }
+
+	ID3D12Resource* GetRenderTarget(uint32_t Index) const;
+
+	inline uint32_t GetRenderTargetHeapDescriptorSize() const noexcept { return m_RenderTargetHeapDescriptorSize; }
+
+	inline DescriptorHeap* GetMainHeap() noexcept { return m_MainHeap.get(); }
+	inline D3D12MA::Allocator* GetAllocator() { return m_Allocator.Get(); }
+
+
 private:
-	ComPtr<IDXGIAdapter1> m_Adapter;
+	ComPtr<IDXGIAdapter3> m_Adapter;
 	ComPtr<IDXGIFactory2> m_Factory;
 
 	ComPtr<ID3D12Device5> m_Device;
@@ -110,37 +146,5 @@ public:
 	HANDLE m_FenceEvent;
 	std::array<uint64_t, FRAME_COUNT> m_FenceValues{};
 
-	inline bool RaytraceSupported() const noexcept { return bRaytracingSupport; }
-
-	// Getters
-	IDXGIAdapter1* GetAdapter() const noexcept { return m_Adapter.Get(); }
-	IDXGIFactory2* GetFactory() const noexcept { return m_Factory.Get(); }
-
-	ID3D12Device5* GetDevice() const noexcept { return m_Device.Get(); }
-
-	ID3D12GraphicsCommandList4* GetCommandList() const noexcept { return m_CommandList.Get(); }
-	ID3D12CommandAllocator* GetCommandAllocator(uint32_t Index) const;
-	ID3D12CommandAllocator* GetCommandAllocator() const;
-	ID3D12CommandQueue* GetCommandQueue() const noexcept { return m_CommandQueue.Get(); }
-
-	IDXGISwapChain3* GetSwapChain() const noexcept { return m_SwapChain.Get(); }
-	ID3D12DescriptorHeap* GetRenderTargetHeap() const noexcept { return m_RenderTargetHeap.Get(); }
-	ID3D12Resource* GetRenderTarget() const;
-
-	DXGI_FORMAT GetRenderTargetFormat() const noexcept { return m_RenderTargetFormat; }
-
-	ID3D12Fence* GetFence() const noexcept { return m_Fence.Get(); }
-
-	D3D_FEATURE_LEVEL GetFeatureLevel() const noexcept { return m_FeatureLevel; }
-
-	D3D12_VIEWPORT GetViewport() noexcept { return m_Viewport; }
-	D3D12_RECT GetViewportRect() noexcept { return m_ViewportRect; }
-
-	ID3D12Resource* GetRenderTarget(uint32_t Index) const;
-
-	uint32_t GetRenderTargetHeapDescriptorSize() const noexcept { return m_RenderTargetHeapDescriptorSize; }
-
-	DescriptorHeap* GetMainHeap() noexcept { return m_MainHeap.get(); }
-	D3D12MA::Allocator* GetAllocator() { return m_Allocator.Get(); }
-
+	
 };

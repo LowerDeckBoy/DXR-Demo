@@ -90,10 +90,10 @@
     <ClInclude Include="Source\Graphics\Buffer\BufferUtils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Graphics\Texture.hpp">
+    <ClInclude Include="Source\Utilities\FileUtils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Utilities\FileUtils.hpp">
+    <ClInclude Include="Source\Raytracing\StateObjectBuilder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -152,7 +152,7 @@
     <ClCompile Include="Source\Graphics\Buffer\BufferUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Graphics\Texture.cpp">
+    <ClCompile Include="Source\Raytracing\StateObjectBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -170,6 +170,7 @@
     <FxCompile Include="Assets\Raytracing\Miss.hlsl" />
     <FxCompile Include="Assets\Raytracing\Hit.hlsl" />
     <FxCompile Include="Assets\Raytracing\ShadowRay.hlsl" />
+    <FxCompile Include="Assets\Raytracing\HitRay.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="Assets\Fonts\CaskaydiaCoveNerdFontMono-Bold.ttf" />
