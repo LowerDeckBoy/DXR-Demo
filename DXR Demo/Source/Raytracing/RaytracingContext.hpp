@@ -39,7 +39,7 @@ struct CubeBuffer
 enum LocalRootArguments
 {
 	eAlbedo = 0,
-	eTexture
+	eTopLevelReference
 };
 
 enum GlobalRootArguments
@@ -48,13 +48,14 @@ enum GlobalRootArguments
 	eTopLevel,
 	eCameraBuffer,
 	eSceneBuffer,
-	eTexResolution
+	eVertex,
+	eIndex
 };
 
 class RaytracingContext
 {
 public:
-	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index);
+	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index, std::vector<ConstantBuffer<cbPerObject>>& ConstBuffers);
 	~RaytracingContext() noexcept(false);
 
 	void Create();
@@ -102,14 +103,15 @@ private:
 
 	// Shader Root Signatures
 	ComPtr<ID3D12RootSignature> m_GlobalRootSignature;
-	ComPtr<ID3D12RootSignature> m_LocalRootSignature;
+	ComPtr<ID3D12RootSignature> m_MissRootSignature;
+	ComPtr<ID3D12RootSignature> m_ClosestHitRootSignature;
 	ComPtr<ID3D12RootSignature> m_ShadowRootSignature;
 
 	uint32_t m_PayloadSize		{ 0 };
 	uint32_t m_AttributeSize	{ 0 };
 	// 1 -> Primary rays
-	// 2 -> Simple shadowing
-	uint32_t m_MaxRecursiveDepth{ 1 };
+	// 2 -> Simple shadows
+	uint32_t m_MaxRecursiveDepth{ 2 };
 
 	AccelerationStructures m_AS;
 
@@ -119,6 +121,7 @@ private:
 
 	std::vector<VertexBuffer> m_VertexBuffers;
 	std::vector<IndexBuffer> m_IndexBuffers;
+	std::vector<ConstantBuffer<cbPerObject>> m_ConstBuffers;
 
 	// Shader Table
 	ShaderTable m_RayGenTable;
@@ -134,6 +137,7 @@ private:
 	//ComPtr<ID3D12Resource> m_ShaderTableStorage;
 
 	void UpdateCamera();
+
 	// Const buffer for 3D
 	ConstantBuffer<RaytraceBuffer> m_SceneBuffer;
 	RaytraceBuffer m_SceneData{};
@@ -142,10 +146,11 @@ private:
 	ConstantBuffer<CubeBuffer> m_CubeBuffer;
 	CubeBuffer m_CubeData{};
 
+
 	// Light data for shading
 	std::array<float, 3> m_LightPosition{ 0.0f, 1.5f, -8.0f };
-	std::array<float, 4> m_LightAmbient{ 0.5f, 0.5f, 0.5f, 1.0f };
-	std::array<float, 4> m_LightDiffuse{ 1.0f, 0.0f, 0.0f, 1.0f };
+	std::array<float, 4> m_LightAmbient { 0.5f, 0.5f, 0.5f, 1.0f };
+	std::array<float, 4> m_LightDiffuse { 0.960f, 0.416f, 0.416f, 1.0f };
 
 	// Shader names
 	// Those are associate with names given inside Raytracing shaders
@@ -154,5 +159,8 @@ private:
 	static const wchar_t* m_RayGenShaderName;
 	static const wchar_t* m_MissShaderName;
 	static const wchar_t* m_ClosestHitShaderName;
+	static const wchar_t* m_ShadowHitGroupName;
+	static const wchar_t* m_ShadowMissName;
+	static const wchar_t* m_PlaneHitGroupName;
 
 };
