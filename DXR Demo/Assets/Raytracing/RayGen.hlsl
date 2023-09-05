@@ -3,9 +3,6 @@
 
 #include "Common.hlsli"
 
-
-//RaytracingAccelerationStructure SceneTopLevel : register(t0, space0);
-
 [shader("raygeneration")]
 void RayGen()
 {
@@ -21,19 +18,27 @@ void RayGen()
     // Y inversion
     screenPos.y = -screenPos.y;
     float aspectRatio = dims.x / dims.y;
-    float4x4 viewProj = SceneData.ViewProjection;
+    float4x4 viewProj = gSceneData.ViewProjection;
     float4 world = mul(float4(screenPos, 0, 1), viewProj);
     world.xyz /= world.w;
-    float3 origin = SceneData.CameraPosition.xyz;
+    float3 origin = gSceneData.CameraPosition.xyz;
     float3 direction = normalize(world.xyz - origin);
  
     RayDesc ray;
     ray.Origin = origin;
     ray.Direction = direction;
     ray.TMin = 0.01f;       //-> zNear
-    ray.TMax = 1000.0f;     //-> zFar
+    ray.TMax = 100000.0f;   //-> zFar
     //RAY_FLAG_CULL_BACK_FACING_TRIANGLES
-    TraceRay(gSceneTopLevel, RAY_FLAG_NONE, 0xFF, 0, 1, 0, ray, payload);
+    //RAY_FLAG_FORCE_NON_OPAQUE 
+    TraceRay(gSceneTopLevel, 
+        RAY_FLAG_FORCE_NON_OPAQUE,
+        0xFF, 
+        0, 
+        2, 
+        0, 
+        ray, 
+        payload);
     
     gRaytraceScene[launchIndex] = payload.Color;
 }

@@ -11,6 +11,11 @@ struct HitAttributes
     float2 UV;
 };
 
+struct ShadowHitInfo
+{
+    bool bHit;
+};
+
 float3 WorldPosition()
 {
     return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
