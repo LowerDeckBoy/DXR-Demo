@@ -104,8 +104,7 @@ void TopLevel::Create(ID3D12GraphicsCommandList4* pCommandList, ID3D12Resource* 
 		std::memcpy(descs[i].Transform, &transform, sizeof(descs[i].Transform));
 		descs[i].InstanceID = m_Instances.at(i)->InstanceID;
 		descs[i].InstanceContributionToHitGroupIndex = m_Instances.at(i)->HitGroupID;
-		//descs[i].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
-		descs[i].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+		descs[i].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
 		descs[i].InstanceMask = 0xFF;
 	}
 	pDescriptors->Unmap(0, nullptr);
