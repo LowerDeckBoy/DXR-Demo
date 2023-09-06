@@ -64,7 +64,6 @@ void ClosestHit(inout HitInfo payload, BuiltInTriangleIntersectionAttributes att
     
     float3 triangleNormal = HitAttribute(vertices, attrib);
     
-    //float3 pixelToLight = normalize(SceneData.CameraPosition.xyz - WorldPosition());
     float3 pixelToLight = normalize(gSceneData.LightPosition.xyz - WorldPosition());
     float NdotL = max(0.0f, dot(pixelToLight, triangleNormal));
     float4 color = saturate(Albedo * gSceneData.LightDiffuse * NdotL);
@@ -72,14 +71,11 @@ void ClosestHit(inout HitInfo payload, BuiltInTriangleIntersectionAttributes att
     payload.Color = float4(gSceneData.LightAmbient.rgb + color.rgb, RayTCurrent());
 }
 
-
 [shader("closesthit")] 
 void PlaneClosestHit(inout HitInfo payload, BuiltInTriangleIntersectionAttributes attrib) 
 { 
-    //float3(2.0f, 2.0f, -2.0f)
-    float3 lightPos = float3(0.0f, 1.0f, -1.0f) + gSceneData.LightPosition.xyz;
+    float3 lightPos = gSceneData.LightPosition.xyz;
 
-    // Find the world - space hit position 
     float3 origin = WorldPosition();
     float3 direction = normalize(lightPos - origin);
     
@@ -89,23 +85,24 @@ void PlaneClosestHit(inout HitInfo payload, BuiltInTriangleIntersectionAttribute
     ray.Direction = direction;
     ray.TMin = 0.01f;
     ray.TMax = 100000.0f;
-    bool hit = true; 
+    bool hit = true;
     
     ShadowHitInfo shadowPayload;
-    shadowPayload.bHit = false;
+    // Not using ShadowClosestHit shader
+    // hit is assumed as true
+    shadowPayload.bHit = true;
     
-    // Trace the ray 
     TraceRay(
         gSceneTopLevel,
-        RAY_FLAG_FORCE_NON_OPAQUE,
+        RAY_FLAG_NONE,
         0xFF, 
         1,
         0, 
         1, 
         ray, 
-        shadowPayload); 
+        shadowPayload);
     
-    float shadowFactor = shadowPayload.bHit ? 0.3f : 1.0f;
+    float shadowFactor = shadowPayload.bHit ? 0.25f : 1.0f;
     float3 barycentrics = float3(1.f - attrib.barycentrics.x - attrib.barycentrics.y, attrib.barycentrics.x, attrib.barycentrics.y); 
 
     float4 hitColor = float4(float3(0.5f, 0.5f, 0.5f) * shadowFactor, RayTCurrent());

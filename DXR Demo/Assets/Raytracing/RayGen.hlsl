@@ -29,10 +29,9 @@ void RayGen()
     ray.Direction = direction;
     ray.TMin = 0.01f;       //-> zNear
     ray.TMax = 100000.0f;   //-> zFar
-    //RAY_FLAG_CULL_BACK_FACING_TRIANGLES
-    //RAY_FLAG_FORCE_NON_OPAQUE 
+
     TraceRay(gSceneTopLevel, 
-        RAY_FLAG_FORCE_NON_OPAQUE,
+        RAY_FLAG_NONE,
         0xFF, 
         0, 
         2, 
