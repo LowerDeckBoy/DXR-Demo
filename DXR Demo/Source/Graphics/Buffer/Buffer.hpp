@@ -76,6 +76,7 @@ public:
 	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
 	
 	D3D12_VERTEX_BUFFER_VIEW View{};
+
 private:
 	void SetView();
 };
@@ -87,12 +88,8 @@ public:
 	IndexBuffer(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
 	~IndexBuffer();
 	
-
-	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
-	{
-		Buffer::Create(pDevice, Data, Desc, BufferType::eIndex);
-		SetView();
-	}
+	void Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc);
+	
 	// TODO:
 	// Check whether indices count is greater than 16bits
 	// if so, use DXGI_FORMAT_R16_UINT format

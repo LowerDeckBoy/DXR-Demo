@@ -10,7 +10,7 @@
 class Camera;
 class VertexBuffer;
 class IndexBuffer;
-class Model;
+//class Model;
 
 // Scene buffer for 3D
 struct RaytraceBuffer
@@ -73,13 +73,14 @@ public:
 
 	void OnResize();
 
-	[[maybe_unused]]
-	void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ComPtr<ID3D12RootSignature>* ppRootSignature) const;
+private:
+	void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName = L"") const;
 
-	//test
 	void SetConstBufferData();
 
 	void DrawGUI();
+
+	void UpdateCamera();
 
 private:
 	DeviceContext* m_DeviceCtx{ nullptr };
@@ -136,7 +137,6 @@ private:
 	//std::unique_ptr<ShaderTableBuilder> m_ShaderTableBuilder;
 	//ComPtr<ID3D12Resource> m_ShaderTableStorage;
 
-	void UpdateCamera();
 
 	// Const buffer for 3D
 	ConstantBuffer<RaytraceBuffer> m_SceneBuffer;

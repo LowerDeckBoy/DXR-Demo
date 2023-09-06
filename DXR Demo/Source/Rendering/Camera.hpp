@@ -70,13 +70,13 @@ public:
 	float m_Pitch{ 0.0f };
 	float m_Yaw{ 0.0f };
 
-	float GetCameraSpeed() const noexcept { return m_CameraSpeed; };
+	inline float GetCameraSpeed() const noexcept { return m_CameraSpeed; };
 	void SetCameraSpeed(float NewSpeed) noexcept { m_CameraSpeed = NewSpeed; }
 
-	float GetZNear() const noexcept { return m_zNear; }
-	void SetZNear(float NewZ) noexcept { m_zNear = NewZ; }
-	float GetZFar() const noexcept { return m_zFar; }
-	void SetZFar(float NewZ) noexcept { m_zFar = NewZ; }
+	inline float GetZNear() const noexcept { return m_zNear; }
+	inline void SetZNear(float NewZ) noexcept { m_zNear = NewZ; }
+	inline float GetZFar() const noexcept { return m_zFar; }
+	inline void SetZFar(float NewZ) noexcept { m_zFar = NewZ; }
 
 	// For GUI usage
 	std::array<float, 3> m_CameraSlider;

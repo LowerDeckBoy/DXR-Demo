@@ -83,6 +83,12 @@ IndexBuffer::~IndexBuffer()
 	Buffer::Release();
 }
 
+void IndexBuffer::Create(DeviceContext* pDevice, BufferData Data, BufferDesc Desc)
+{
+	Buffer::Create(pDevice, Data, Desc, BufferType::eIndex);
+	SetView();
+}
+
 bool IndexBuffer::IsR32bits()
 {
 	return Buffer::GetData().ElementsCount > UINT16_MAX;
