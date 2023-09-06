@@ -7,7 +7,7 @@
 // D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT == 64 bytes
 inline constexpr uint32_t ALIGN(uint32_t Size, uint32_t Alignment)
 {
-	return ((Size + (Alignment + 1))) & ~(Alignment - 1);
+	return ((Size + (Alignment - 1))) & ~(Alignment - 1);
 }
 
 TableRecord::TableRecord(void* pIdentifier, uint32_t Size) noexcept
@@ -44,6 +44,7 @@ ShaderTable::~ShaderTable()
 void ShaderTable::Create(ID3D12Device5* pDevice, uint32_t NumShaderRecord, uint32_t ShaderRecordSize, const std::wstring& DebugName)
 {
 	m_ShaderRecordSize = ALIGN(ShaderRecordSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
+	//m_ShaderRecordSize = ALIGN(D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT, ShaderRecordSize);
 	m_Records.reserve(NumShaderRecord);
 
 	const uint32_t bufferSize{ NumShaderRecord * m_ShaderRecordSize };
