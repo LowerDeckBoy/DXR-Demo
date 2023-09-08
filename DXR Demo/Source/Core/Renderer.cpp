@@ -27,11 +27,15 @@ void Renderer::Initalize(Camera* pCamera, Timer* pTimer)
 	LoadAssets();
 
 	// Pass current objects geometry data
-	std::vector<VertexBuffer> vertex{ m_Cube->m_VertexBuffer, m_Plane->m_VertexBuffer };
-	std::vector<IndexBuffer> index{ m_Cube->m_IndexBuffer, m_Plane->m_IndexBuffer };
+	//m_Cube->m_VertexBuffer
+	
+	std::vector<VertexBuffer> vertex{ *m_Models.at(0)->m_VertexBuffer.get(), m_Plane->m_VertexBuffer};
+	std::vector<IndexBuffer> index{ *m_Models.at(0)->m_IndexBuffer.get(), m_Plane->m_IndexBuffer};
 	std::vector<ConstantBuffer<cbPerObject>> constants{ m_Cube->m_ConstBuffer, m_Plane->m_ConstBuffer };
-
-	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index, constants);
+		
+	std::vector<Texture> textures{ *m_Models.at(0)->m_Textures.at(0) };
+	//m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index, constants);
+	m_RaytracingContext = std::make_unique<RaytracingContext>(m_DeviceCtx.get(), m_ShaderManager.get(), pCamera, vertex, index, textures);
 
 	m_DeviceCtx->ExecuteCommandLists();
 	m_DeviceCtx->WaitForGPU();
@@ -42,6 +46,12 @@ void Renderer::LoadAssets()
 {
 	m_Cube  = new Cube(m_DeviceCtx.get());
 	m_Plane = new Plane(m_DeviceCtx.get());
+
+	// Load models
+	//m_Models.emplace_back(new Model(m_DeviceCtx.get(), "Assets/glTF/damaged_helmet/scene.gltf", "Helmet"));
+	//m_Models.emplace_back(new Model(m_DeviceCtx.get(), "Assets/glTF/mathilda/scene.gltf", "Helmet"));
+	m_Models.emplace_back(new Model(m_DeviceCtx.get(), "Assets/glTF/suzanne/Suzanne.gltf", "Helmet"));
+	//m_Models.emplace_back(new Model(m_DeviceCtx.get(), "Assets/glTF/sponza/Sponza.gltf", "Helmet"));
 
 }
 
@@ -110,7 +120,9 @@ void Renderer::RecordCommandList(uint32_t CurrentFrame, Camera* pCamera)
 		m_DeviceCtx->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 		m_DeviceCtx->GetCommandList()->SetGraphicsRootDescriptorTable(3, m_DeviceCtx->GetMainHeap()->GetHeap()->GetGPUDescriptorHandleForHeapStart());
 		m_Plane->Draw(pCamera->GetViewProjection());
-		m_Cube->Draw(pCamera->GetViewProjection());
+		//m_Cube->Draw(pCamera->GetViewProjection());
+		for (const auto& model : m_Models)
+			model->Draw(pCamera);
 	}
 	else // Raytrace
 	{
@@ -175,10 +187,10 @@ void Renderer::SetHeaps(ID3D12DescriptorHeap** ppHeap)
 
 void Renderer::CreatePipelines()
 {
-	m_VertexShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Global_Vertex.hlsl", L"vs_6_0");
-	m_PixelShader  = m_ShaderManager->CreateDXIL("Assets/Shaders/Global_Pixel.hlsl", L"ps_6_0");
-	//m_VertexShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Model_Vertex.hlsl", L"vs_6_0");
-	//m_PixelShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Model_Pixel.hlsl", L"ps_6_0");
+	//m_VertexShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Global_Vertex.hlsl", L"vs_6_0");
+	//m_PixelShader  = m_ShaderManager->CreateDXIL("Assets/Shaders/Global_Pixel.hlsl", L"ps_6_0");
+	m_VertexShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Model_Vertex.hlsl", L"vs_6_0");
+	m_PixelShader = m_ShaderManager->CreateDXIL("Assets/Shaders/Model_Pixel.hlsl", L"ps_6_0");
 
 	std::array<CD3DX12_DESCRIPTOR_RANGE1, 1> ranges{};
 	ranges.at(0).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 64, 0, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
@@ -223,9 +235,10 @@ void Renderer::CreatePipelines()
 	SAFE_RELEASE(signature);
 	SAFE_RELEASE(error);
 
-	std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs{};
-	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	inputElementDescs.at(1) = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputElementDescs{};
+	inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs.at(1) = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs.at(2) = { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 
 	//std::array<D3D12_INPUT_ELEMENT_DESC, 5> inputElementDescs{};
 	//inputElementDescs.at(0) = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };

@@ -13,8 +13,8 @@ struct VS_INPUT
     float3 Position     : POSITION;
     float2 TexCoord     : TEXCOORD;
     float3 Normal       : NORMAL;
-    float3 Tangent      : TANGENT;
-    float3 Bitangent    : BITANGENT;
+    //float3 Tangent      : TANGENT;
+    //float3 Bitangent    : BITANGENT;
 };
 
 struct VS_OUTPUT
@@ -23,8 +23,8 @@ struct VS_OUTPUT
     float4 WorldPosition    : WORLD_POSITION;
     float2 TexCoord         : TEXCOORD;
     float3 Normal           : NORMAL;
-    float3 Tangent          : TANGENT;
-    float3 Bitangent        : BITANGENT;
+    //float3 Tangent          : TANGENT;
+    //float3 Bitangent        : BITANGENT;
 };
 
 
@@ -36,8 +36,8 @@ VS_OUTPUT main(VS_INPUT vin)
     output.WorldPosition = mul(World, float4(vin.Position, 1.0f));
     output.TexCoord = vin.TexCoord;
     output.Normal = normalize(vin.Normal);
-    output.Tangent = normalize(vin.Tangent);
-    output.Bitangent = normalize(vin.Bitangent);
+    //output.Tangent = normalize(vin.Tangent);
+    //output.Bitangent = normalize(vin.Bitangent);
     
     return output;
 }

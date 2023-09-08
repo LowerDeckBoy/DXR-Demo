@@ -16,10 +16,10 @@ void Plane::Create(DeviceContext* pDevice)
 	m_DeviceCtx = pDevice;
 	
 	std::array<VertexNormal, 4> vertices = {
-		VertexNormal{ { -8.0f, -1.0f, -8.0f }, { 0.0f, 1.0f, 0.0f }},
-		VertexNormal{ { +8.0f, -1.0f, -8.0f }, { 0.0f, 1.0f, 0.0f }},
-		VertexNormal{ { +8.0f, -1.0f, +8.0f }, { 0.0f, 1.0f, 0.0f }},
-		VertexNormal{ { -8.0f, -1.0f, +8.0f }, { 0.0f, 1.0f, 0.0f }}
+		VertexNormal{ { -1000.0f, -1.0f, -1000.0f }, { 0.0f, 1.0f, 0.0f }},
+		VertexNormal{ { +1000.0f, -1.0f, -1000.0f }, { 0.0f, 1.0f, 0.0f }},
+		VertexNormal{ { +1000.0f, -1.0f, +1000.0f }, { 0.0f, 1.0f, 0.0f }},
+		VertexNormal{ { -1000.0f, -1.0f, +1000.0f }, { 0.0f, 1.0f, 0.0f }}
 	};
 
 	std::array<uint32_t, 6> indices = {

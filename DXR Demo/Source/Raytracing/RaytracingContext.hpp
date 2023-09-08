@@ -10,6 +10,7 @@
 class Camera;
 class VertexBuffer;
 class IndexBuffer;
+class Texture;
 //class Model;
 
 // Scene buffer for 3D
@@ -38,8 +39,7 @@ struct CubeBuffer
 // TODO:
 enum LocalRootArguments
 {
-	eAlbedo = 0,
-	eTopLevelReference
+	eAlbedo,
 };
 
 enum GlobalRootArguments
@@ -49,13 +49,15 @@ enum GlobalRootArguments
 	eCameraBuffer,
 	eSceneBuffer,
 	eVertex,
-	eIndex
+	eIndex,
+	Count
 };
 
 class RaytracingContext
 {
 public:
 	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index, std::vector<ConstantBuffer<cbPerObject>>& ConstBuffers);
+	RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index, std::vector<Texture> Textures);
 	~RaytracingContext() noexcept(false);
 
 	void Create();
@@ -74,7 +76,8 @@ public:
 	void OnResize();
 
 private:
-	void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName = L"") const;
+	void SerializeAndCreateRootSignature(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName = L"") const;
+	//void SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName = L"") const;
 
 	void SetConstBufferData();
 
@@ -123,6 +126,7 @@ private:
 	std::vector<VertexBuffer> m_VertexBuffers;
 	std::vector<IndexBuffer> m_IndexBuffers;
 	std::vector<ConstantBuffer<cbPerObject>> m_ConstBuffers;
+	std::vector<Texture> m_Textures;
 
 	// Shader Table
 	ShaderTable m_RayGenTable;

@@ -7,8 +7,8 @@ struct PS_INPUT
     float4 WorldPosition    : WORLD_POSITION;
     float2 TexCoord         : TEXCOORD;
     float3 Normal           : NORMAL;
-    float3 Tangent          : TANGENT;
-    float3 Bitangent        : BITANGENT;
+    //float3 Tangent          : TANGENT;
+    //float3 Bitangent        : BITANGENT;
 };
 
 cbuffer cbMaterial : register(b0, space1)

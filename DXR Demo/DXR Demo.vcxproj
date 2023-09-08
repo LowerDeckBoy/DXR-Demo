@@ -107,6 +107,7 @@
     <ClInclude Include="Source\Graphics\Buffer\BufferUtils.hpp" />
     <ClInclude Include="Source\Graphics\Buffer\ConstTypes.hpp" />
     <ClInclude Include="Source\Graphics\Plane.hpp" />
+    <ClInclude Include="Source\Graphics\Texture.hpp" />
     <ClInclude Include="Source\Inputs\CameraInputs.hpp" />
     <ClInclude Include="Source\Raytracing\AccelerationStructures.hpp" />
     <ClInclude Include="Source\Raytracing\RaytracingContext.hpp" />
@@ -123,6 +124,9 @@
     <ClInclude Include="Source\Graphics\Cube.hpp" />
     <ClInclude Include="Source\Graphics\Shader.hpp" />
     <ClInclude Include="Source\Rendering\Camera.hpp" />
+    <ClInclude Include="Source\Rendering\Model\Importer.hpp" />
+    <ClInclude Include="Source\Rendering\Model\Mesh.hpp" />
+    <ClInclude Include="Source\Rendering\Model\Model.hpp" />
     <ClInclude Include="Source\Utilities\FileUtils.hpp" />
     <ClInclude Include="Source\Utilities\MemoryUsage.hpp" />
     <ClInclude Include="Source\Utilities\Timer.hpp" />
@@ -135,6 +139,7 @@
     <ClCompile Include="Source\Graphics\Buffer\Buffer.cpp" />
     <ClCompile Include="Source\Graphics\Buffer\BufferUtils.cpp" />
     <ClCompile Include="Source\Graphics\Plane.cpp" />
+    <ClCompile Include="Source\Graphics\Texture.cpp" />
     <ClCompile Include="Source\Inputs\CameraInputs.cpp" />
     <ClCompile Include="Source\Raytracing\AccelerationStructures.cpp" />
     <ClCompile Include="Source\Raytracing\RaytracingContext.cpp" />
@@ -149,6 +154,8 @@
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Rendering\Camera.cpp" />
     <ClCompile Include="Source\Raytracing\StateObjectBuilder.cpp" />
+    <ClCompile Include="Source\Rendering\Model\Importer.cpp" />
+    <ClCompile Include="Source\Rendering\Model\Model.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\Raytracing\ClosestHit.hlsl">
@@ -168,6 +175,14 @@
     <FxCompile Include="Assets\Raytracing\HitRay.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.3</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Assets\Raytracing\Hit_Test.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.3</ShaderModel>
     </FxCompile>
     <FxCompile Include="Assets\Raytracing\Miss.hlsl">

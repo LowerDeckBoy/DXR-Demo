@@ -40,14 +40,16 @@ struct ModelVertex
 {
 	float3 Position;
 	float2 TexCoord;
-	float3 Normal;
-	float3 Tangent;
-	float3 Bitangent;
+    float3 Normal;
+	//float3 Tangent;
+	//float3 Bitangent;
 };
 
 // Buffers
 RWTexture2D<float4>             gRaytraceScene  : register(u0, space0);
 RaytracingAccelerationStructure gSceneTopLevel  : register(t0, space0);
 ConstantBuffer<SceneBuffer>     gSceneData      : register(b1, space0);
+
+//SamplerState texSampler : register(s0, space0);
 
 #endif // COMMON_HLSLI

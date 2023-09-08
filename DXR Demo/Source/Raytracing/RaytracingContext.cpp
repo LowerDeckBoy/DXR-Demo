@@ -23,6 +23,13 @@ RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* p
 	Create();
 }
 
+RaytracingContext::RaytracingContext(DeviceContext* pDeviceCtx, ShaderManager* pShaderManager, Camera* pCamera, std::vector<VertexBuffer>& Vertex, std::vector<IndexBuffer>& Index, std::vector<Texture> Textures)
+	: m_DeviceCtx(pDeviceCtx), m_ShaderManager(pShaderManager), m_Camera(pCamera), m_VertexBuffers(Vertex), m_IndexBuffers(Index)
+{
+	m_Textures.insert(m_Textures.begin(), Textures.begin(), Textures.end());
+	Create();
+}
+
 RaytracingContext::~RaytracingContext() noexcept(false)
 {
 
@@ -109,6 +116,8 @@ void RaytracingContext::OnRaytrace()
 
 void RaytracingContext::DispatchRaytrace()
 {
+	//m_DeviceCtx->GetCommandList()->SetDescriptorHeaps(1, m_DeviceCtx->GetMainHeap()->GetHeapAddressOf());
+
 	const auto dispatch = [&](ID3D12GraphicsCommandList4* pCommandList, const D3D12_DISPATCH_RAYS_DESC& Desc) {
 
 		pCommandList->SetComputeRootSignature(m_GlobalRootSignature.Get());
@@ -120,6 +129,7 @@ void RaytracingContext::DispatchRaytrace()
 		// Geometry Buffers
 		pCommandList->SetComputeRootDescriptorTable(GlobalRootArguments::eVertex, m_VertexBuffers.at(0).m_Descriptor.GetGPU());
 		pCommandList->SetComputeRootDescriptorTable(GlobalRootArguments::eIndex, m_IndexBuffers.at(0).m_Descriptor.GetGPU());
+		pCommandList->SetComputeRootDescriptorTable(6, m_Textures.at(0).m_Descriptor.GetGPU());
 		// Execute
 		pCommandList->SetPipelineState1(m_StateObject.Get());
 		pCommandList->DispatchRays(&Desc);
@@ -175,13 +185,14 @@ void RaytracingContext::CreateRootSignatures()
 		D3D12_ROOT_SIGNATURE_DESC desc{};
 		desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 		
-		std::array<CD3DX12_DESCRIPTOR_RANGE, 4> ranges{};
-		ranges.at(GlobalRootArguments::eOutputUAV).Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
-		ranges.at(GlobalRootArguments::eTopLevel).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
-		ranges.at(2).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 1, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
-		ranges.at(3).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 1, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+		std::array<CD3DX12_DESCRIPTOR_RANGE1, 5> ranges{};
+		ranges.at(GlobalRootArguments::eOutputUAV).Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+		ranges.at(GlobalRootArguments::eTopLevel).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+		ranges.at(2).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+		ranges.at(3).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 1, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+		ranges.at(4).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
-		std::array<CD3DX12_ROOT_PARAMETER, 6> params{};
+		std::array<CD3DX12_ROOT_PARAMETER1, 7> params{};
 		// UAV Output buffer
 		params.at(GlobalRootArguments::eOutputUAV).InitAsDescriptorTable(1, &ranges.at(0), D3D12_SHADER_VISIBILITY_ALL);
 		// TLAS buffer
@@ -192,49 +203,44 @@ void RaytracingContext::CreateRootSignatures()
 		// Geometry Buffers
 		params.at(GlobalRootArguments::eVertex).InitAsDescriptorTable(1, &ranges.at(2));
 		params.at(GlobalRootArguments::eIndex).InitAsDescriptorTable(1, &ranges.at(3));
+		// Test
+		params.at(6).InitAsDescriptorTable(1, &ranges.at(4));
 
-		desc.NumParameters = static_cast<uint32_t>(params.size());
-		desc.pParameters = params.data();
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC vdesc{};
+		vdesc.Init_1_1(static_cast<uint32_t>(params.size()), params.data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
-		RaytracingContext::SerializeAndCreateRootSignature(desc, m_GlobalRootSignature.GetAddressOf(), L"Raytracing Global Root Signature");
+		RaytracingContext::SerializeAndCreateRootSignature(vdesc, m_GlobalRootSignature.GetAddressOf(), L"Raytracing Global Root Signature");
 	}
 
-	// Local Root Signature
+	// Local Root Signatures
+	
 	// Miss
 	{
-		D3D12_ROOT_SIGNATURE_DESC desc{};
-		desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
-
-		desc.NumParameters = 0;
-		desc.pParameters = nullptr;
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
+		desc.Init_1_1(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
 
 		RaytracingContext::SerializeAndCreateRootSignature(desc, m_MissRootSignature.GetAddressOf(), L"Miss Local Root Signature");
 	}
 
-	// Local Root Signature
 	// ClosestHit
 	{
-		D3D12_ROOT_SIGNATURE_DESC desc{};
-		desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+		std::array<CD3DX12_DESCRIPTOR_RANGE1, 1> ranges{};
+		ranges.at(0).Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
-		std::array<CD3DX12_ROOT_PARAMETER, 1> params{};
-		params.at(LocalRootArguments::eAlbedo).InitAsConstants(sizeof(XMVECTOR), 0, 2);
-		//params.at(LocalRootArguments::eTopLevelReference).InitAsShaderResourceView(1, 2);
+		std::array<CD3DX12_ROOT_PARAMETER1, 1> params{};
+		params.at(LocalRootArguments::eAlbedo).InitAsConstants(sizeof(XMVECTOR), 0, 2); 
+		//params.at(1).InitAsDescriptorTable(1, &ranges.at(0));
 
-		desc.NumParameters = static_cast<uint32_t>(params.size());
-		desc.pParameters = params.data();
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
+		desc.Init_1_1(static_cast<uint32_t>(params.size()), params.data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
 
 		RaytracingContext::SerializeAndCreateRootSignature(desc, m_ClosestHitRootSignature.GetAddressOf(), L"ClosestHit Local Root Signature");
 	}
 
-	// Local Root Signature
 	// Shadows
 	{
-		D3D12_ROOT_SIGNATURE_DESC desc{};
-		desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
-
-		desc.NumParameters = 0;
-		desc.pParameters = nullptr;
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
+		desc.Init_1_1(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
 
 		RaytracingContext::SerializeAndCreateRootSignature(desc, m_ShadowRootSignature.GetAddressOf(), L"Shadows Local Root Signature");
 	}
@@ -248,6 +254,7 @@ void RaytracingContext::CreateStateObject()
 	m_RayGenShader	= m_ShaderManager->CreateDXIL("Assets/Raytracing/RayGen.hlsl", L"lib_6_3");
 	m_MissShader	= m_ShaderManager->CreateDXIL("Assets/Raytracing/Miss.hlsl", L"lib_6_3");
 	m_HitShader		= m_ShaderManager->CreateDXIL("Assets/Raytracing/HitRay.hlsl", L"lib_6_3");
+	//m_HitShader		= m_ShaderManager->CreateDXIL("Assets/Raytracing/Hit_Test.hlsl", L"lib_6_3");
 	m_ShadowShader	= m_ShaderManager->CreateDXIL("Assets/Raytracing/ShadowRay.hlsl", L"lib_6_3");
 
 	// RayGen
@@ -411,7 +418,7 @@ void RaytracingContext::BuildShaderTables()
 	constexpr uint32_t shaderIdentifierSize{ D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES };
 	
 	const D3D12_GPU_DESCRIPTOR_HANDLE heapHandle{ m_DeviceCtx->GetMainHeap()->GetHeap()->GetGPUDescriptorHandleForHeapStart() };
-	const auto* heapPointer{ reinterpret_cast<uint64_t*>(heapHandle.ptr) };
+	auto* heapPointer{ reinterpret_cast<uint64_t*>(heapHandle.ptr) };
 	
 	void* rayGenIdentifier	    { m_StateObjectProperties.Get()->GetShaderIdentifier(m_RayGenShaderName) };
 	void* missIdentifier	    { m_StateObjectProperties.Get()->GetShaderIdentifier(m_MissShaderName) };
@@ -461,11 +468,13 @@ void RaytracingContext::BuildShaderTables()
 		struct LocalArgs
 		{
 			XMVECTOR Albedo;
-			void* pHeap;
+			uint64_t* pHeap;
+			uint64_t* pTexture;
 		} localArgs{};
 
 		localArgs.Albedo = m_CubeData.CubeColor;
-		localArgs.pHeap = &heapPointer;
+		localArgs.pHeap		= heapPointer;
+		localArgs.pTexture	= reinterpret_cast<uint64_t*>(m_Textures.at(0).m_Descriptor.GetGPU().ptr);
 
 		const uint32_t shaderRecordSize{ shaderIdentifierSize + static_cast<uint32_t>(sizeof(localArgs)) };
 		//
@@ -485,12 +494,14 @@ void RaytracingContext::BuildShaderTables()
 
 }
  
-void RaytracingContext::SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName) const
+//void RaytracingContext::SerializeAndCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName) const
+void RaytracingContext::SerializeAndCreateRootSignature(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC& Desc, ID3D12RootSignature** ppRootSignature, LPCWSTR DebugName) const
 {
 	ComPtr<ID3DBlob> signature;
 	ComPtr<ID3DBlob> error;
-
-	ThrowIfFailed(D3D12SerializeRootSignature(&Desc, D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
+	//D3D12SerializeVersionedRootSignature()
+	ThrowIfFailed(D3D12SerializeVersionedRootSignature(&Desc, signature.GetAddressOf(), error.GetAddressOf()));
+	//ThrowIfFailed(D3D12SerializeRootSignature(&Desc, D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
 	ThrowIfFailed(m_DeviceCtx->GetDevice()->CreateRootSignature(
 		0, 
 		signature->GetBufferPointer(), 

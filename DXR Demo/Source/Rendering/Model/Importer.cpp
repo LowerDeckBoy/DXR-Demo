@@ -2,8 +2,6 @@
 #include <assimp/scene.h>
 #include "Importer.hpp"
 #include "../../Utilities/FileUtils.hpp"
-//#include "../../Utilities/TimeUtils.hpp"
-//#include "../../Utilities/Logger.hpp"
 #include <vector>
 
 #include <assimp/Importer.hpp>
@@ -16,10 +14,6 @@ Importer::Importer(DeviceContext* pDevice, std::string_view Filepath)
 
 bool Importer::Import(DeviceContext* pDevice, std::string_view Filepath)
 {
-	//Logger::Log("Loading model...");
-	//TimeUtils timer{};
-	//timer.Timer_Start();
-
 	Assimp::Importer importer;
 	auto loadFlags{  
 		aiProcess_Triangulate |
@@ -33,7 +27,6 @@ bool Importer::Import(DeviceContext* pDevice, std::string_view Filepath)
 	
 	if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
 	{
-		//Logger::Log(importer.GetErrorString(), LogType::eError);
 		throw std::runtime_error(importer.GetErrorString());
 	}
 
@@ -49,7 +42,6 @@ bool Importer::Import(DeviceContext* pDevice, std::string_view Filepath)
 		m_Textures.reserve(scene->mNumTextures);
 	
 	importer.FreeScene();
-	//timer.Timer_End(true);
 
 	return true;
 }
@@ -119,8 +111,8 @@ model::Mesh* Importer::ProcessMesh(const aiScene* pScene, const aiMesh* pMesh, X
 	std::vector<XMFLOAT3> positions;
 	std::vector<XMFLOAT2> uvs;
 	std::vector<XMFLOAT3> normals;
-	std::vector<XMFLOAT3> tangents;
-	std::vector<XMFLOAT3> bitangents;
+	//std::vector<XMFLOAT3> tangents;
+	//std::vector<XMFLOAT3> bitangents;
 
 	model::Mesh* newMesh{ new model::Mesh() };
 
@@ -151,22 +143,23 @@ model::Mesh* Importer::ProcessMesh(const aiScene* pScene, const aiMesh* pMesh, X
 		else
 			normals.emplace_back(0.0f, 0.0f, 0.0f);
 
-		if (pMesh->HasTangentsAndBitangents())
-		{
-			tangents.emplace_back(pMesh->mTangents[i].x, pMesh->mTangents[i].y, pMesh->mTangents[i].z);
-			bitangents.emplace_back(pMesh->mBitangents[i].x, pMesh->mBitangents[i].y, pMesh->mBitangents[i].z);
-		}
-		else
-		{
-			tangents.emplace_back(0.0f, 0.0f, 0.0f);
-			bitangents.emplace_back(0.0f, 0.0f, 0.0f);
-		}
+		//if (pMesh->HasTangentsAndBitangents())
+		//{
+		//	tangents.emplace_back(pMesh->mTangents[i].x, pMesh->mTangents[i].y, pMesh->mTangents[i].z);
+		//	bitangents.emplace_back(pMesh->mBitangents[i].x, pMesh->mBitangents[i].y, pMesh->mBitangents[i].z);
+		//}
+		//else
+		//{
+		//	tangents.emplace_back(0.0f, 0.0f, 0.0f);
+		//	bitangents.emplace_back(0.0f, 0.0f, 0.0f);
+		//}
 		
 	}
 
 	newMesh->VertexCount = static_cast<uint32_t>(positions.size());
 	for (uint32_t i = 0; i < pMesh->mNumVertices; i++)
-		m_Vertices.emplace_back(positions.at(i), uvs.at(i), normals.at(i), tangents.at(i), bitangents.at(i));
+		m_Vertices.emplace_back(positions.at(i), uvs.at(i), normals.at(i));
+		//m_Vertices.emplace_back(positions.at(i), uvs.at(i), normals.at(i), tangents.at(i), bitangents.at(i));
 
 	uint32_t indexCount{ 0 };
 	if (pMesh->HasFaces())

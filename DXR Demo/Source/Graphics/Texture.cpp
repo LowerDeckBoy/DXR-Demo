@@ -49,7 +49,7 @@ void Texture::CreateFromWIC(DeviceContext* pDevice, const std::string_view& Text
 	std::unique_ptr<uint8_t[]> decodedData;
 	D3D12_SUBRESOURCE_DATA subresource{};
 
-	DirectX::LoadWICTextureFromFileEx(pDevice->GetDevice(), path, 0, D3D12_RESOURCE_FLAG_NONE, DirectX::DX12::WIC_LOADER_MIP_RESERVE, m_Texture.ReleaseAndGetAddressOf(), decodedData, subresource);
+	DirectX::LoadWICTextureFromFileEx(pDevice->GetDevice(), path, 0, D3D12_RESOURCE_FLAG_NONE, DirectX::DX12::WIC_LOADER_DEFAULT, m_Texture.ReleaseAndGetAddressOf(), decodedData, subresource);
 
 	const auto desc{ m_Texture->GetDesc() };
 
@@ -58,7 +58,7 @@ void Texture::CreateFromWIC(DeviceContext* pDevice, const std::string_view& Text
 	const auto uploadDesc = CD3DX12_RESOURCE_DESC(
 		D3D12_RESOURCE_DIMENSION_TEXTURE2D,
 		D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-		desc.Width, desc.Height, 1, mips,
+		desc.Width, desc.Height, 1, 1,
 		DXGI_FORMAT_R8G8B8A8_UNORM,
 		1, 0,
 		D3D12_TEXTURE_LAYOUT_UNKNOWN, D3D12_RESOURCE_FLAG_NONE);

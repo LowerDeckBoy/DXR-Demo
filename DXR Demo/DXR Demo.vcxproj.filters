@@ -96,6 +96,18 @@
     <ClInclude Include="Source\Raytracing\StateObjectBuilder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Graphics\Texture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Rendering\Model\Importer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Rendering\Model\Mesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Rendering\Model\Model.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\DeviceContext.cpp">
@@ -155,6 +167,15 @@
     <ClCompile Include="Source\Raytracing\StateObjectBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Graphics\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Rendering\Model\Importer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Rendering\Model\Model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\Shaders\Global_Vertex.hlsl" />
@@ -171,6 +192,7 @@
     <FxCompile Include="Assets\Raytracing\Hit.hlsl" />
     <FxCompile Include="Assets\Raytracing\ShadowRay.hlsl" />
     <FxCompile Include="Assets\Raytracing\HitRay.hlsl" />
+    <FxCompile Include="Assets\Raytracing\Hit_Test.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="Assets\Fonts\CaskaydiaCoveNerdFontMono-Bold.ttf" />

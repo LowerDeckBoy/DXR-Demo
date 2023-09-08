@@ -12,6 +12,8 @@
 
 #include "../Editor/Editor.hpp"
 
+#include "../Rendering/Model/Model.hpp"
+
 class Camera;
 class Timer;
 
@@ -59,6 +61,8 @@ private:
 
 	Cube* m_Cube{ nullptr };
 	Plane* m_Plane{ nullptr };
+
+	std::vector<Model*> m_Models;
 
 	// Raytracing
 	std::unique_ptr<RaytracingContext> m_RaytracingContext;

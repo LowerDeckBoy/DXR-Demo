@@ -8,8 +8,8 @@ cbuffer cbCube : register(b0, space2)
 {
     float4 Albedo;
 }
-
-StructuredBuffer<ObjectVertex> Vertex : register(t0, space1);
+//ObjectVertex
+StructuredBuffer<ModelVertex> Vertex : register(t0, space1);
 StructuredBuffer<uint> Indices : register(t1, space1);
 
 // unused

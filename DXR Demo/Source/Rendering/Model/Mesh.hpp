@@ -48,6 +48,42 @@ namespace model
 		int32_t EmissiveIndex			{ -1 };
 	};
 
+	struct Mest_Test
+	{
+		std::string Name;
+		XMMATRIX Matrix{ XMMatrixIdentity() };
+
+		std::vector<Vertex> Vertices;
+		std::vector<uint32_t> Indices;
+
+		uint32_t MaterialIndex{ 0 };
+	};
+
+	struct Material_Test
+	{
+		std::string Name;
+		DirectX::XMFLOAT4 BaseColorFactor;
+		DirectX::XMFLOAT4 EmissiveFactor;
+
+		float MetallicFactor	{ 1.0f };
+		float RoughnessFactor	{ 1.0f };
+		float AlphaCutoff		{ 0.5f };
+		BOOL bDoubleSided		{ false };
+
+		// Texture indices -> bindless
+		int32_t BaseColorIndex		{ -1 };
+		int32_t NormalIndex			{ -1 };
+		int32_t MetalRoughnessIndex	{ -1 };
+		int32_t EmissiveIndex		{ -1 };
+
+		// TODO: 
+		//float RefractionFactor;
+		// TODO: Add enums
+		//uint8_t ShadingModel;
+
+	};
+
+
 	struct Mesh
 	{
 		std::string Name;
